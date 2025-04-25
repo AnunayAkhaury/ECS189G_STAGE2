@@ -4,9 +4,8 @@ from local_code.stage_2_code.Evaluate_Accuracy import Evaluate_Accuracy
 import numpy as np
 import torch
 
-# Set random seeds for reproducibility
-np.random.seed(2)
-torch.manual_seed(2)
+np.random.seed(42)
+torch.manual_seed(42)
 
 train_path = '../../data/stage_2_data/train.csv'
 test_path = '../../data/stage_2_data/test.csv'
@@ -17,10 +16,8 @@ test_data_loader = Dataset_Loader(test_path, 'test', 'Test data for MLP')
 train_data = train_data_loader.load()
 test_data = test_data_loader.load()
 
-# Initialize the MLP model
 mlp = Method_MLP('MLP', 'Multi-Layer Perceptron for Classification')
 
-# Prepare the data dictionary in the format the MLP expects
 mlp.data = {
     'train': {
         'X': train_data['X'],
@@ -32,15 +29,12 @@ mlp.data = {
     }
 }
 
-# Create evaluation object
 evaluate_obj = Evaluate_Accuracy('accuracy', '')
 
 print('************ Start ************')
 print('Training MLP...')
-# Run training and testing
 result = mlp.run()
 
-# Evaluate the results
 evaluate_obj.data = result
 accuracy = evaluate_obj.evaluate()
 
