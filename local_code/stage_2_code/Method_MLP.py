@@ -90,15 +90,7 @@ class Method_MLP(method, nn.Module):
 
             if epoch%100 == 0:
                 accuracy_evaluator.data = {'true_y': y_true, 'pred_y': y_pred.max(1)[1]}
-                # print('Epoch:', epoch, 'Accuracy:', accuracy_evaluator.evaluate(), 'Loss:', train_loss.item())
-                metrics = accuracy_evaluator.evaluate()
-                print(f'Epoch: {epoch}')
-                print(f"Loss: {train_loss.item()}")
-                print(f"Accuracy: {metrics['accuracy']}")
-                print(f"Weighted F1: {metrics['weighted']['f1']}")
-                print(f"Micro F1: {metrics['micro']['f1']}")
-                print(f"Macro F1: {metrics['macro']['f1']}")
-                print('-------------------')
+                print('Epoch:', epoch, 'Accuracy:', accuracy_evaluator.evaluate(), 'Loss:', train_loss.item())
     
     def test(self, X):
         # do the testing, and result the result
