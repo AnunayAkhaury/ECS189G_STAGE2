@@ -8,15 +8,12 @@ import torch
 np.random.seed(2)
 torch.manual_seed(2)
 
-# Initialize the data loader
-train_path = 'data/stage_2_data/train.csv'
-test_path = 'data/stage_2_data/test.csv'  
+train_path = '../../data/stage_2_data/train.csv'
+test_path = '../../data/stage_2_data/test.csv'
 
-# Create data loader instances
 train_data_loader = Dataset_Loader(train_path, 'train', 'Training data for MLP')
 test_data_loader = Dataset_Loader(test_path, 'test', 'Test data for MLP')
 
-# Load the data
 train_data = train_data_loader.load()
 test_data = test_data_loader.load()
 
