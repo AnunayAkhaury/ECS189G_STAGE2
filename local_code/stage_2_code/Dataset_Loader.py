@@ -6,45 +6,32 @@ Concrete IO class for a specific dataset
 # License: TBD
 
 from local_code.base_class.dataset import dataset
-import os
-import csv
-
+import numpy as np
 
 class Dataset_Loader(dataset):
     data = None
     dataset_source_folder_path = None
+    dataset_source_file_name = None
     
-    def __init__(self, dName=None, dDescription=None):
+    def __init__(self,file_path , dName=None, dDescription=None):
         super().__init__(dName, dDescription)
-    
+        self.file_path = file_path
+
     def load(self):
         print('loading data...')
-        train_data = self._load_csv_file('train.csv')
-        test_data = self._load_csv_file('test.csv')
-        return {
-            'train': train_data,
-            'test': test_data
-        }
-    
-    def _load_csv_file(self, filename):
         X = []
         y = []
-        filepath = os.path.join(self.dataset_source_folder_path, filename)
         
-        if not os.path.exists(filepath):
-            print(f"Warning: File {filepath} does not exist!")
-            return {'X': X, 'y': y}
-            
-        print(f'Loading {filename}...')
-        with open(filepath, 'r') as f:
-            csv_reader = csv.reader(f)
-            for row in csv_reader:
-                # Convert all elements to integers
-                elements = [int(x) for x in row]
-                # First element is the label
+        with open(self.file_path, 'r') as f:
+            for line in f:
+                elements = [int(i) for i in line.strip().split(',')]
+                
                 y.append(elements[0])
-                # Remaining elements are features
+                
                 X.append(elements[1:])
         
-        print(f'Loaded {len(X)} instances from {filename}')
+        X = np.array(X)
+        y = np.array(y)
+        
+        print(f'Loaded {len(X)} instances with {X.shape[1]} features')
         return {'X': X, 'y': y}
