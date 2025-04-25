@@ -57,17 +57,21 @@ evaluate_obj.data = result
 metrics = evaluate_obj.evaluate()
 
 print('************ Overall Performance ************')
-print(f"Accuracy: {metrics['accuracy']:.4f}")
+print(f"Accuracy: {metrics['accuracy']}")
+
 print('\nWeighted Metrics:')
-print(f"Precision: {metrics['weighted']['precision']:.4f}")
-print(f"Recall: {metrics['weighted']['recall']:.4f}")
-print(f"F1-score: {metrics['weighted']['f1']:.4f}")
+print(f"Precision: {metrics['weighted']['precision']}")
+print(f"Recall: {metrics['weighted']['recall']}")
+print(f"F1-score: {metrics['weighted']['f1']}")
+
 print('\nMacro Metrics:')
-print(f"Precision: {metrics['macro']['precision']:.4f}")
-print(f"Recall: {metrics['macro']['recall']:.4f}")
-print(f"F1-score: {metrics['macro']['f1']:.4f}")
+print(f"Precision: {metrics['macro']['precision']}")
+print(f"Recall: {metrics['macro']['recall']}")
+print(f"F1-score: {metrics['macro']['f1']}")
+
 print('\nMicro Metrics:')
-print(f"Precision: {metrics['micro']['precision']:.4f}")
-print(f"Recall: {metrics['micro']['recall']:.4f}")
-print(f"F1-score: {metrics['micro']['f1']:.4f}")
+print(f"Precision: {metrics['micro']['precision']}")
+print(f"Recall: {metrics['micro']['recall']}")
+print(f"F1-score: {metrics['micro']['f1']}")
+
 print('************ Finish ************')
