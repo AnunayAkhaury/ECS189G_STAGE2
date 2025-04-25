@@ -6,7 +6,7 @@ Concrete MethodModule class for a specific learning MethodModule
 # License: TBD
 
 from local_code.base_class.method import method
-from local_code.stage_1_code.Evaluate_Accuracy import Evaluate_Accuracy
+from local_code.stage_2_code.Evaluate_Accuracy import Evaluate_Accuracy
 import torch
 from torch import nn
 import numpy as np
@@ -91,14 +91,14 @@ class Method_MLP(method, nn.Module):
             if epoch%100 == 0:
                 accuracy_evaluator.data = {'true_y': y_true, 'pred_y': y_pred.max(1)[1]}
                 print('Epoch:', epoch, 'Accuracy:', accuracy_evaluator.evaluate(), 'Loss:', train_loss.item())
-                # metrics = accuracy_evaluator.evaluate()
-                # print(f'Epoch: {epoch}')
-                # print(f"Loss: {train_loss.item():.4f}")
-                # print(f"Accuracy: {metrics['accuracy']:.4f}")
-                # print(f"Weighted F1: {metrics['weighted']['f1']:.4f}")
-                # print(f"Macro F1: {metrics['macro']['f1']:.4f}")
-                # print(f"Micro F1: {metrics['micro']['f1']:.4f}")
-                # print('-------------------')
+                metrics = accuracy_evaluator.evaluate()
+                print(f'Epoch: {epoch}')
+                print(f"Loss: {train_loss.item():.4f}")
+                print(f"Accuracy: {metrics['accuracy']:.4f}")
+                print(f"Weighted F1: {metrics['weighted']['f1']:.4f}")
+                print(f"Macro F1: {metrics['macro']['f1']:.4f}")
+                print(f"Micro F1: {metrics['micro']['f1']:.4f}")
+                print('-------------------')
     
     def test(self, X):
         # do the testing, and result the result
