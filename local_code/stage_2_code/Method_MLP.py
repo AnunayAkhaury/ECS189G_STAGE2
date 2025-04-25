@@ -15,7 +15,7 @@ import numpy as np
 class Method_MLP(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 500
+    max_epoch = 5000
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-3
 
@@ -47,7 +47,7 @@ class Method_MLP(method, nn.Module):
         # self.fc_layer_2(h) will be a nx2 tensor
         # n (denotes the input instance number): 0th dimension; 2 (denotes the class number): 1st dimension
         # we do softmax along dim=1 to get the normalized classification probability distributions for each instance
-        h2 = self.activation_func_2(self.fc_layer_2(h))
+        h2 = self.activation_func_1(self.fc_layer_2(h))
         y_pred = self.activation_func_2(self.fc_layer_3(h2))
         return y_pred
 
