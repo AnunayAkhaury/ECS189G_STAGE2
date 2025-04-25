@@ -49,13 +49,25 @@ plt.grid(True)
 plt.legend()
 
 # Save the plot
-plt.savefig('training_convergence.png')
+plt.savefig('../../result/stage_2_result/training_convergence.png')
 plt.close()
 
 # Evaluate the results
 evaluate_obj.data = result
-accuracy = evaluate_obj.evaluate()
+metrics = evaluate_obj.evaluate()
 
 print('************ Overall Performance ************')
-print('MLP Accuracy:', accuracy)
+print(f"Accuracy: {metrics['accuracy']:.4f}")
+print('\nWeighted Metrics:')
+print(f"Precision: {metrics['weighted']['precision']:.4f}")
+print(f"Recall: {metrics['weighted']['recall']:.4f}")
+print(f"F1-score: {metrics['weighted']['f1']:.4f}")
+print('\nMacro Metrics:')
+print(f"Precision: {metrics['macro']['precision']:.4f}")
+print(f"Recall: {metrics['macro']['recall']:.4f}")
+print(f"F1-score: {metrics['macro']['f1']:.4f}")
+print('\nMicro Metrics:')
+print(f"Precision: {metrics['micro']['precision']:.4f}")
+print(f"Recall: {metrics['micro']['recall']:.4f}")
+print(f"F1-score: {metrics['micro']['f1']:.4f}")
 print('************ Finish ************')
