@@ -33,6 +33,8 @@ class Method_MLP(method, nn.Module):
         self.fc_layer_3 = nn.Linear(20, 20)
         # check here for nn.Softmax doc: https://pytorch.org/docs/stable/generated/torch.nn.Softmax.html
         self.activation_func_2 = nn.Softmax(dim=1)
+        # Add loss history tracking
+        self.loss_history = []
 
     # it defines the forward propagation function for input x
     # this function will calculate the output layer by layer
@@ -60,6 +62,9 @@ class Method_MLP(method, nn.Module):
         # for training accuracy investigation purpose
         accuracy_evaluator = Evaluate_Accuracy('training evaluator', '')
 
+        # Clear loss history at the start of training
+        self.loss_history = []
+
         # it will be an iterative gradient updating process
         # we don't do mini-batch, we use the whole input as one batch
         # you can try to split X and y into smaller-sized batches by yourself
@@ -70,6 +75,9 @@ class Method_MLP(method, nn.Module):
             y_true = torch.LongTensor(np.array(y))
             # calculate the training loss
             train_loss = loss_function(y_pred, y_true)
+
+            
+            self.loss_history.append(train_loss.item())
 
             # check here for the gradient init doc: https://pytorch.org/docs/stable/generated/torch.optim.Optimizer.zero_grad.html
             optimizer.zero_grad()

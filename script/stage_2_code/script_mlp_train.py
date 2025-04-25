@@ -3,9 +3,10 @@ from local_code.stage_2_code.Method_MLP import Method_MLP
 from local_code.stage_2_code.Evaluate_Accuracy import Evaluate_Accuracy
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
 
-np.random.seed(42)
-torch.manual_seed(42)
+np.random.seed(2)
+torch.manual_seed(2)
 
 train_path = '../../data/stage_2_data/train.csv'
 test_path = '../../data/stage_2_data/test.csv'
@@ -35,6 +36,23 @@ print('************ Start ************')
 print('Training MLP...')
 result = mlp.run()
 
+# Get the loss history from the model
+loss_history = mlp.loss_history
+
+# Create the convergence plot
+plt.figure(figsize=(10, 6))
+plt.plot(loss_history, label='Training Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('MLP Training Convergence')
+plt.grid(True)
+plt.legend()
+
+# Save the plot
+plt.savefig('training_convergence.png')
+plt.close()
+
+# Evaluate the results
 evaluate_obj.data = result
 accuracy = evaluate_obj.evaluate()
 
