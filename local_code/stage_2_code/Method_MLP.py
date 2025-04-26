@@ -26,11 +26,11 @@ class Method_MLP(method, nn.Module):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
         # check here for nn.Linear doc: https://pytorch.org/docs/stable/generated/torch.nn.Linear.html
-        self.fc_layer_1 = nn.Linear(784, 20)
+        self.fc_layer_1 = nn.Linear(784, 40)
         # check here for nn.ReLU doc: https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html
         self.activation_func_1 = nn.ReLU()
-        self.fc_layer_2 = nn.Linear(20, 20)
-        self.fc_layer_3 = nn.Linear(20, 10)
+        self.fc_layer_2 = nn.Linear(40, 40)
+        self.fc_layer_3 = nn.Linear(40, 10)
         # check here for nn.Softmax doc: https://pytorch.org/docs/stable/generated/torch.nn.Softmax.html
         self.activation_func_2 = nn.Softmax(dim=1)
         # Add loss history tracking
