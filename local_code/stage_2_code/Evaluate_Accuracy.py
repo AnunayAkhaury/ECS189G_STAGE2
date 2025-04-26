@@ -20,17 +20,17 @@ class Evaluate_Accuracy(evaluate):
         # Calculate all metrics
         accuracy = accuracy_score(true_y, pred_y)
         
-        # Weighted metrics (accounts for class imbalance)
+        # Weighted metrics
         weighted_precision = precision_score(true_y, pred_y, average='weighted')
         weighted_recall = recall_score(true_y, pred_y, average='weighted')
         weighted_f1 = f1_score(true_y, pred_y, average='weighted')
         
-        # Macro metrics (arithmetic mean across classes)
+        # Macro metrics
         macro_precision = precision_score(true_y, pred_y, average='macro')
         macro_recall = recall_score(true_y, pred_y, average='macro')
         macro_f1 = f1_score(true_y, pred_y, average='macro')
         
-        # Micro metrics (aggregate TP, FP, FN across all classes)
+        # Micro metrics
         micro_precision = precision_score(true_y, pred_y, average='micro')
         micro_recall = recall_score(true_y, pred_y, average='micro')
         micro_f1 = f1_score(true_y, pred_y, average='micro')
