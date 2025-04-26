@@ -36,10 +36,8 @@ print('************ Start ************')
 print('Training MLP...')
 result = mlp.run()
 
-# Get the loss history from the model
 loss_history = mlp.loss_history
 
-# Create the convergence plot
 plt.figure(figsize=(10, 6))
 plt.plot(loss_history, label='Training Loss')
 plt.xlabel('Epoch')
@@ -48,11 +46,9 @@ plt.title('MLP Training Convergence')
 plt.grid(True)
 plt.legend()
 
-# Save the plot
 plt.savefig('../../result/stage_2_result/training_convergence.png')
 plt.close()
 
-# Evaluate the results
 evaluate_obj.data = result
 metrics = evaluate_obj.evaluate()
 
