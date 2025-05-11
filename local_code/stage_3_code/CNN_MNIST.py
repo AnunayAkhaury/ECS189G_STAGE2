@@ -15,7 +15,7 @@ import numpy as np
 class CNN_MNIST(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 2000
+    max_epoch = 20
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-3
 
@@ -138,8 +138,8 @@ class CNN_MNIST(method, nn.Module):
         y_pred = self.forward(torch.FloatTensor(np.array(X)))
         # convert the probability distributions to the corresponding labels
         # instances will get the labels corresponding to the largest probability
-        return y_pred.max(1)[1]
-    
+        return y_pred.max(1)[1].cpu()
+
     def run(self):
         print('method running...')
         print('--start training...')

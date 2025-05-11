@@ -6,7 +6,7 @@ import numpy as np
 
 class CNN_CIFAR10(method, nn.Module):
     data = None
-    max_epoch = 2000
+    max_epoch = 200
     learning_rate = 1e-3
 
     def __init__(self, mName, mDescription):
@@ -111,7 +111,7 @@ class CNN_CIFAR10(method, nn.Module):
     def test(self, X):
         self.to(self.device)
         y_pred = self.forward(torch.FloatTensor(np.array(X)))
-        return y_pred.max(1)[1]
+        return y_pred.max(1)[1].cpu()
 
     def run(self):
         print('method running...')
