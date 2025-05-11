@@ -29,18 +29,31 @@ class CNN_ORL(method, nn.Module):
         self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
         print(f"Using device: {self.device}")
 
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(64)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool2d(kernel_size=2)
 
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(128)
         self.relu2 = nn.ReLU()
         self.pool2 = nn.MaxPool2d(kernel_size=2)
 
-        self.fc1 = nn.Linear(64 * 7 * 7, 128)
+        self.conv3 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
+        self.bn3 = nn.BatchNorm2d(256)
         self.relu3 = nn.ReLU()
-        self.dropout = nn.Dropout(0.5)
-        self.fc2 = nn.Linear(128, 10)
+        self.pool3 = nn.MaxPool2d(kernel_size=2)
+
+        self.fc1 = nn.Linear(256 * 11 * 14, 512)
+        self.bn4 = nn.BatchNorm1d(512)
+        self.relu4 = nn.ReLU()
+        self.dropout1 = nn.Dropout(0.4)
+
+        self.fc2 = nn.Linear(512, 128)
+        self.relu5 = nn.ReLU()
+        self.dropout2 = nn.Dropout(0.4)
+
+        self.fc3 = nn.Linear(128, 40)
         self.softmax = nn.Softmax(dim=1)
 
     # it defines the forward propagation function for input x
@@ -51,26 +64,40 @@ class CNN_ORL(method, nn.Module):
         x = x.to(self.device)
 
         batch_size = x.size(0)
-        x = x.view(batch_size, 1, 28, 28)
+        x = x.view(batch_size, 3, 112, 92)
 
         x = self.conv1(x)
+        x = self.bn1(x)
         x = self.relu1(x)
         x = self.pool1(x)
 
         x = self.conv2(x)
+        x = self.bn2(x)
         x = self.relu2(x)
         x = self.pool2(x)
 
-        x = x.view(batch_size, -1)
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = self.relu3(x)
+        x = self.pool3(x)
+
+        x = x.view(x.size(0), -1)
 
         x = self.fc1(x)
-        x = self.relu3(x)
-        x = self.dropout(x)
+        x = self.bn4(x)
+        x = self.relu4(x)
+        x = self.dropout1(x)
+
         x = self.fc2(x)
+        x = self.relu5(x)
+        x = self.dropout2(x)
 
-        y_pred = self.softmax(x)
+        x = self.fc3(x)
 
-        return y_pred
+        x = self.softmax(x)
+
+        return x
+
     # backward error propagation will be implemented by pytorch automatically
     # so we don't need to define the error backpropagation function here
 
