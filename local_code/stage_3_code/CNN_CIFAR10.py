@@ -1,15 +1,28 @@
+'''
+Concrete MethodModule class for a specific learning MethodModule
+'''
+
+# Copyright (c) 2017-Current Jiawei Zhang <jiawei@ifmlab.org>
+# License: TBD
+
 from local_code.base_class.method import method
 from local_code.stage_3_code.Evaluate_Accuracy import Evaluate_Accuracy
 import torch
 from torch import nn
 import numpy as np
 
+
 class CNN_CIFAR10(method, nn.Module):
     data = None
+    # it defines the max rounds to train the model
     max_epoch = 200
+    # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-3
-    target_accuracy = 0.95
-    
+
+    target_accuracy = 0.70
+    # it defines the the MLP model architecture, e.g.,
+    # how many layers, size of variables in each layer, activation function, etc.
+    # the size of the input/output portal of the model architecture should be consistent with our data input and desired output
     def __init__(self, mName, mDescription):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
@@ -25,16 +38,22 @@ class CNN_CIFAR10(method, nn.Module):
         self.relu2 = nn.ReLU()
         self.pool2 = nn.MaxPool2d(kernel_size=2)
 
-        self.fc1 = nn.Linear(64 * 8 * 8, 128)
+        self.fc1 = nn.Linear(64 * 7 * 7, 128)
         self.relu3 = nn.ReLU()
         self.dropout = nn.Dropout(0.5)
         self.fc2 = nn.Linear(128, 10)
+        self.softmax = nn.Softmax(dim=1)
+
+    # it defines the forward propagation function for input x
+    # this function will calculate the output layer by layer
 
     def forward(self, x):
+        '''Forward propagation'''
         x = x.to(self.device)
-        batch_size = x.size(0)
 
+        batch_size = x.size(0)
         x = x.view(batch_size, 3, 32, 32)
+
         x = self.conv1(x)
         x = self.relu1(x)
         x = self.pool1(x)
@@ -50,7 +69,11 @@ class CNN_CIFAR10(method, nn.Module):
         x = self.dropout(x)
         x = self.fc2(x)
 
-        return x  
+        y_pred = self.softmax(x)
+
+        return y_pred
+    # backward error propagation will be implemented by pytorch automatically
+    # so we don't need to define the error backpropagation function here
 
     def train(self, X, y):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -94,7 +117,8 @@ class CNN_CIFAR10(method, nn.Module):
             self.loss_history.append(avg_loss)
 
             if epoch % 10 == 0:
-                eval_indices = np.random.choice(n_samples, n_samples, replace=False)
+                eval_size = n_samples
+                eval_indices = np.random.choice(n_samples, eval_size, replace=False)
                 X_eval = X_array[eval_indices]
                 y_eval = y_array[eval_indices]
 
@@ -106,17 +130,19 @@ class CNN_CIFAR10(method, nn.Module):
                     'true_y': torch.LongTensor(y_eval),
                     'pred_y': pred_labels
                 }
-                accuracy = accuracy_evaluator.evaluate()
-                print(f'Epoch: {epoch}, Accuracy: {accuracy:.4f}, Loss: {avg_loss:.6f}')
+                results = accuracy_evaluator.evaluate()
+                print('Epoch:', epoch, 'Results:', results, 'Loss:', avg_loss)
 
-                if accuracy >= self.target_accuracy:
-                    print(f"Threshold reached ({accuracy:.4f}), saving model and stopping.")
-                    torch.save(self.state_dict(), self.checkpoint_path)
+                if results['accuracy'] >= self.target_accuracy and epoch >= 50:
+                    print(f"Threshold reached ({results['accuracy']:.4f}), saving model and stopping.")
                     break
 
     def test(self, X):
+        # do the testing, and result the result
         self.to(self.device)
         y_pred = self.forward(torch.FloatTensor(np.array(X)))
+        # convert the probability distributions to the corresponding labels
+        # instances will get the labels corresponding to the largest probability
         return y_pred.max(1)[1].cpu()
 
     def run(self):

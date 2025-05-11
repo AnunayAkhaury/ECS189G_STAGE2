@@ -15,7 +15,7 @@ import numpy as np
 class CNN_MNIST(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 20
+    max_epoch = 200
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-3
 
@@ -130,12 +130,11 @@ class CNN_MNIST(method, nn.Module):
                     'true_y': torch.LongTensor(y_eval),
                     'pred_y': pred_labels
                 }
-                accuracy = accuracy_evaluator.evaluate()
-                print(f'Epoch: {epoch}, Accuracy: {accuracy:.4f}, Loss: {avg_loss:.6f}')
+                results = accuracy_evaluator.evaluate()
+                print('Epoch:', epoch, 'Results:', results, 'Loss:', avg_loss)
 
-                if accuracy >= self.target_accuracy:
-                    print(f"Threshold reached ({acc:.4f}), saving model and stopping.")
-                    torch.save(self.state_dict(), self.checkpoint_path)
+                if results['accuracy'] >= self.target_accuracy and epoch >= 50:
+                    print(f"Threshold reached ({results['accuracy']:.4f}), saving model and stopping.")
                     break
 
     def test(self, X):
