@@ -8,7 +8,8 @@ class CNN_CIFAR10(method, nn.Module):
     data = None
     max_epoch = 200
     learning_rate = 1e-3
-
+    target_accuracy = 0.95
+    
     def __init__(self, mName, mDescription):
         method.__init__(self, mName, mDescription)
         nn.Module.__init__(self)
@@ -107,6 +108,11 @@ class CNN_CIFAR10(method, nn.Module):
                 }
                 accuracy = accuracy_evaluator.evaluate()
                 print(f'Epoch: {epoch}, Accuracy: {accuracy:.4f}, Loss: {avg_loss:.6f}')
+
+                if accuracy >= self.target_accuracy:
+                    print(f"Threshold reached ({accuracy:.4f}), saving model and stopping.")
+                    torch.save(self.state_dict(), self.checkpoint_path)
+                    break
 
     def test(self, X):
         self.to(self.device)

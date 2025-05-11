@@ -19,6 +19,7 @@ class CNN_ORL(method, nn.Module):
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-3
 
+    target_accuracy = 0.95
     # it defines the the MLP model architecture, e.g.,
     # how many layers, size of variables in each layer, activation function, etc.
     # the size of the input/output portal of the model architecture should be consistent with our data input and desired output
@@ -158,7 +159,12 @@ class CNN_ORL(method, nn.Module):
                 }
                 accuracy = accuracy_evaluator.evaluate()
                 print(f'Epoch: {epoch}, Accuracy: {accuracy:.4f}, Loss: {avg_loss:.6f}')
-    
+
+                if accuracy >= self.target_accuracy:
+                    print(f"Threshold reached ({accuracy:.4f}), saving model and stopping.")
+                    torch.save(self.state_dict(), self.checkpoint_path)
+                    break
+
     def test(self, X):
         # do the testing, and result the result
         self.to(self.device)
