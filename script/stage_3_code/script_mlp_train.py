@@ -54,3 +54,4 @@ plt.legend()
 
 evaluate_obj.data = result
 metrics = evaluate_obj.evaluate()
+print("Test Accuracy:", metrics)
