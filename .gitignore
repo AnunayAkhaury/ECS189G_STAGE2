@@ -1,0 +1,11 @@
+data/stage_2_data/test.csv
+data/stage_2_data/train.csv
+data/stage_2_data/*
+test.csv
+train.csv
+/data/stage_3_data/CIFAR
+/data/stage_3_data/MNIST
+/data/stage_3_data/ORL
+/data/stage_3_data/ReadMe.pages
+/data/stage_3_data/ReadMe.pdf
+/data/stage_3_data/ReadMe.txt
