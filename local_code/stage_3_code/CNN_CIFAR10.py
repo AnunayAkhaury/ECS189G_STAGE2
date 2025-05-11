@@ -1,4 +1,3 @@
-
 from local_code.base_class.method import method
 from local_code.stage_3_code.Evaluate_Accuracy import Evaluate_Accuracy
 import torch
@@ -25,16 +24,16 @@ class CNN_CIFAR10(method, nn.Module):
         self.relu2 = nn.ReLU()
         self.pool2 = nn.MaxPool2d(kernel_size=2)
 
-        self.fc1 = nn.Linear(64 * 8 * 8, 128)  # 32x32 -> 16x16 after pool1 -> 8x8 after pool2
+        self.fc1 = nn.Linear(64 * 8 * 8, 128)
         self.relu3 = nn.ReLU()
         self.dropout = nn.Dropout(0.5)
-        self.fc2 = nn.Linear(128, 10)  # 10 CIFAR-10 classes
+        self.fc2 = nn.Linear(128, 10)
 
     def forward(self, x):
         x = x.to(self.device)
         batch_size = x.size(0)
 
-        x = x.view(batch_size, 3, 32, 32)  # CIFAR-10: RGB images
+        x = x.view(batch_size, 3, 32, 32)
         x = self.conv1(x)
         x = self.relu1(x)
         x = self.pool1(x)
@@ -50,7 +49,7 @@ class CNN_CIFAR10(method, nn.Module):
         x = self.dropout(x)
         x = self.fc2(x)
 
-        return x  # raw logits (no softmax)
+        return x  
 
     def train(self, X, y):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -82,6 +81,7 @@ class CNN_CIFAR10(method, nn.Module):
                 y_tensor = torch.LongTensor(y_batch).to(self.device)
 
                 y_pred = self.forward(X_tensor)
+
                 train_loss = loss_function(y_pred, y_tensor)
                 epoch_loss += train_loss.item() * len(X_batch)
 
