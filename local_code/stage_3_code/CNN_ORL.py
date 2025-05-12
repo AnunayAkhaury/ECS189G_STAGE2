@@ -15,11 +15,11 @@ import numpy as np
 class CNN_ORL(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 100
+    max_epoch = 200
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-2
 
-    target_accuracy = 0.90
+    target_accuracy = 0.95
     # it defines the MLP model architecture, e.g.,
     # how many layers, size of variables in each layer, activation function, etc.
     # the size of the input/output portal of the model architecture should be consistent with our data input and desired output
@@ -160,7 +160,7 @@ class CNN_ORL(method, nn.Module):
                 results = accuracy_evaluator.evaluate()
                 print('Epoch:', epoch, 'Results:', results, 'Loss:', avg_loss)
 
-                if results['accuracy'] >= self.target_accuracy and epoch >= 50:
+                if results['accuracy'] >= self.target_accuracy and epoch >= 200:
                     print(f"Threshold reached ({results['accuracy']:.4f}), saving model and stopping.")
                     break
 
