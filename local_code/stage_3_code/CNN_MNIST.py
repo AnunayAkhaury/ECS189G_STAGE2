@@ -117,7 +117,7 @@ class CNN_MNIST(method, nn.Module):
             self.loss_history.append(avg_loss)
 
             if epoch % 10 == 0:
-                eval_size = n_samples
+                eval_size = min(n_samples, 128)
                 eval_indices = np.random.choice(n_samples, eval_size, replace=False)
                 X_eval = X_array[eval_indices]
                 y_eval = y_array[eval_indices]
