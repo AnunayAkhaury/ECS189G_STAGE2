@@ -59,6 +59,9 @@ class CNN_CIFAR10(method, nn.Module):
         self.fc3 = nn.Linear(128, num_classes)
         self.softmax = nn.Softmax(dim=1)
 
+    # it defines the forward propagation function for input x
+    # this function will calculate the output layer by layer
+
     def forward(self, x):
         '''Forward propagation'''
         x = x.to(self.device)
@@ -96,8 +99,6 @@ class CNN_CIFAR10(method, nn.Module):
         x = self.softmax(x)
 
         return x
-    # backward error propagation will be implemented by pytorch automatically
-    # so we don't need to define the error backpropagation function here
 
     def train(self, X, y):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -125,7 +126,6 @@ class CNN_CIFAR10(method, nn.Module):
                 X_batch = X_shuffled[i:i + batch_size]
                 y_batch = y_shuffled[i:i + batch_size]
 
-                # Convert to float32 and move to device in one step
                 X_tensor = torch.FloatTensor(X_batch).to(self.device)
                 y_tensor = torch.LongTensor(y_batch).to(self.device)
 
@@ -148,7 +148,6 @@ class CNN_CIFAR10(method, nn.Module):
                 y_eval = y_array[eval_indices]
 
                 with torch.no_grad():
-                    # Move to device first, then evaluate
                     X_eval_tensor = torch.FloatTensor(X_eval).to(self.device)
                     y_pred = self.forward(X_eval_tensor)
                     pred_labels = y_pred.max(1)[1].cpu()

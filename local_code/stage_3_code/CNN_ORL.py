@@ -15,12 +15,12 @@ import numpy as np
 class CNN_ORL(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 50
+    max_epoch = 100
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-2
 
     target_accuracy = 0.90
-    # it defines the the MLP model architecture, e.g.,
+    # it defines the MLP model architecture, e.g.,
     # how many layers, size of variables in each layer, activation function, etc.
     # the size of the input/output portal of the model architecture should be consistent with our data input and desired output
     def __init__(self, mName, mDescription):
@@ -64,8 +64,8 @@ class CNN_ORL(method, nn.Module):
         '''Forward propagation'''
         x = x.to(self.device)
 
-        batch_size = x.size(0)
-        x = x.view(batch_size, 3, 112, 92)
+        if x.shape[-1] == 3:
+            x = x.permute(0, 3, 1, 2).contiguous()
 
         x = self.conv1(x)
         x = self.bn1(x)
@@ -112,7 +112,7 @@ class CNN_ORL(method, nn.Module):
         X_array = np.array(X)
         y_array = np.array(y)
 
-        batch_size = 50000
+        batch_size = 128
         n_samples = len(X_array)
 
         self.to(self.device)
