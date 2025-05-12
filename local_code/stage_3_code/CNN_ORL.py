@@ -30,7 +30,7 @@ class CNN_ORL(method, nn.Module):
         self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
         print(f"Using device: {self.device}")
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool2d(kernel_size=2)
@@ -112,7 +112,7 @@ class CNN_ORL(method, nn.Module):
         X_array = np.array(X)
         y_array = np.array(y)
 
-        batch_size = 128
+        batch_size = 50000
         n_samples = len(X_array)
 
         self.to(self.device)
