@@ -15,7 +15,7 @@ import numpy as np
 class CNN_CIFAR10(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 100
+    max_epoch = 50
     # it defines the learning rate for gradient descent based optimizer for model learning
     learning_rate = 1e-3
 
@@ -59,51 +59,39 @@ class CNN_CIFAR10(method, nn.Module):
         self.fc3 = nn.Linear(128, num_classes)
         self.softmax = nn.Softmax(dim=1)
 
-    # it defines the forward propagation function for input x
-    # this function will calculate the output layer by layer
-
     def forward(self, x):
         '''Forward propagation'''
-        # Make sure input tensor is on the correct device and in the right format
         x = x.to(self.device)
 
-        # Convert input to channels-first format if needed (assuming channels-last format)
-        if x.shape[-1] == 3:  # If the last dimension is 3, it's likely channels-last
+        if x.shape[-1] == 3:
             x = x.permute(0, 3, 1, 2).contiguous()
 
-        # First convolutional block
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu1(x)
         x = self.pool1(x)
 
-        # Second convolutional block
         x = self.conv2(x)
         x = self.bn2(x)
         x = self.relu2(x)
         x = self.pool2(x)
 
-        # Third convolutional block
         x = self.conv3(x)
         x = self.bn3(x)
         x = self.relu3(x)
         x = self.pool3(x)
 
-        # Flatten
-        x = torch.flatten(x, 1)  # Using torch.flatten instead of reshape
+        x = torch.flatten(x, 1)
 
-        # First fully connected layer
         x = self.fc1(x)
         x = self.bn4(x)
         x = self.relu4(x)
         x = self.dropout1(x)
 
-        # Second fully connected layer
         x = self.fc2(x)
         x = self.relu5(x)
         x = self.dropout2(x)
 
-        # Output layer
         x = self.fc3(x)
         x = self.softmax(x)
 

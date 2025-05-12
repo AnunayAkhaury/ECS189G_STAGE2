@@ -15,9 +15,9 @@ import numpy as np
 class CNN_ORL(method, nn.Module):
     data = None
     # it defines the max rounds to train the model
-    max_epoch = 200
+    max_epoch = 50
     # it defines the learning rate for gradient descent based optimizer for model learning
-    learning_rate = 1e-3
+    learning_rate = 1e-2
 
     target_accuracy = 0.90
     # it defines the the MLP model architecture, e.g.,
@@ -30,7 +30,7 @@ class CNN_ORL(method, nn.Module):
         self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
         print(f"Using device: {self.device}")
 
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool2d(kernel_size=2)
