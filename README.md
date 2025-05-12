@@ -20,7 +20,6 @@ Supporting utilities (accuracy evaluation, data loading, result saving) live in 
 
 Each script lives under `script/stage_3_code/` and can be launched directly:
 
-- **MNIST**  
   ```bash
   python script/stage_3_code/script_mlp_train_MNIST.py
   python script/stage_3_code/script_mlp_train_ORL.py
