@@ -2,14 +2,28 @@
 """
 Trains RNNClassifier on the dataset, evaluates, and saves model and training curves.
 """
-import os
+import os, sys
 import json
 import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim as optim
+
+module_path = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),   # …/script/stage_4_code
+        '..',                         # …/script
+        '..',                         # …/ECS189G_STAGE2
+        'local_code',
+        'stage_4_code'
+    )
+)
+sys.path.insert(0, module_path)
+
 from RNN import load_data, build_vocab, TextDataset, RNNClassifier
+
+
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Configuration
