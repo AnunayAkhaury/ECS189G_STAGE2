@@ -16,9 +16,7 @@ import torch.nn as nn
 # 1) Data loading and preprocessing
 # ────────────────────────────────────────────────────────────────────────────────
 def load_data(dataset_dir, split):
-    """
-    Reads text files under dataset_dir/split/{pos,neg} and returns lists of texts and labels.
-    """
+
     texts, labels = [], []
     for label in ("pos", "neg"):
         folder = os.path.join(dataset_dir, split, label)
@@ -96,34 +94,53 @@ class RNNClassifier(nn.Module):
         vocab_size,
         embed_dim,
         rnn_units,
-        num_layers=1,
-        bidirectional=False,
-        rnn_type='rnn'  # one of: 'rnn', 'lstm', 'gru'
+        num_layers=2,
+        bidirectional=True,
+        rnn_type='lstm',       # 'lstm', 'gru', or 'rnn'
+        dropout=0.3,
+        use_attention=False
     ):
         super().__init__()
+        self.use_attention = use_attention
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
-        rnn_type = rnn_type.lower()
+        self.embed_dropout = nn.Dropout(dropout)
+
         rnn_kwargs = dict(
             input_size=embed_dim,
             hidden_size=rnn_units,
             num_layers=num_layers,
             batch_first=True,
-            bidirectional=bidirectional
+            bidirectional=bidirectional,
+            dropout=dropout if num_layers>1 else 0.0
         )
-        if rnn_type == 'lstm':
-            self.rnn = nn.LSTM(**rnn_kwargs)
-        elif rnn_type == 'gru':
+        if rnn_type=='gru':
             self.rnn = nn.GRU(**rnn_kwargs)
+        elif rnn_type=='lstm':
+            self.rnn = nn.LSTM(**rnn_kwargs)
         else:
             self.rnn = nn.RNN(**rnn_kwargs)
 
-        direction_factor = 2 if bidirectional else 1
-        self.fc = nn.Linear(rnn_units * direction_factor, 1)
+        direction = 2 if bidirectional else 1
+        self.fc_dropout = nn.Dropout(dropout)
+        if use_attention:
+            self.attn = nn.Linear(rnn_units * direction, 1)
+        self.fc = nn.Linear(rnn_units * direction, 1)
 
     def forward(self, x):
-        # x: [batch, seq_len]
-        emb = self.embedding(x)  # [batch, seq_len, embed_dim]
-        out, _ = self.rnn(emb)   # out: [batch, seq_len, hidden*dir]
-        last = out[:, -1, :]     # last time-step
-        logits = self.fc(last).squeeze(1)
+        # x: [B, T]
+        emb = self.embed_dropout(self.embedding(x))    # [B, T, E]
+        out, _ = self.rnn(emb)                         # [B, T, H*dir]
+
+        if self.use_attention:
+            # attention scores over T
+            scores  = self.attn(out).squeeze(-1)       # [B, T]
+            weights = torch.softmax(scores, dim=1)     # [B, T]
+            # weighted sum of hidden states
+            h       = (out * weights.unsqueeze(-1)).sum(1)  # [B, H*dir]
+        else:
+            # just take the final time-step
+            h = out[:, -1, :]                          # [B, H*dir]
+
+        h = self.fc_dropout(h)
+        logits = self.fc(h).squeeze(1)                 # [B]
         return logits

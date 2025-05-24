@@ -66,7 +66,17 @@ train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
 test_loader  = DataLoader(test_ds,  batch_size=BATCH_SIZE)
 
 # 3) Model, loss, optimizer
-model = RNNClassifier(vocab_size, EMBED_DIM, RNN_UNITS, NUM_LAYERS, BIDIR, 'lstm').to(DEVICE)
+model = RNNClassifier(
+    vocab_size=vocab_size,
+    embed_dim=128,
+    rnn_units=128,
+    num_layers=2,
+    bidirectional=True,
+    rnn_type='lstm',
+    dropout=0.3,
+    use_attention=True
+).to(DEVICE)
+
 criterion = nn.BCEWithLogitsLoss()
 optimizer = optim.Adam(model.parameters(), lr=LR)
 
