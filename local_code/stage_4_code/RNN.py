@@ -2,13 +2,12 @@
 """
 RNN.py
 
-Provides data loading, preprocessing, vocabulary building, dataset class, and RNN model for text classification.
+Provides data loading, preprocessing, vocabulary building, dataset class, and RNN/LSTM/GRU model for text classification.
 """
 import os
 import re
 import string
 from collections import Counter
-import json
 import torch
 from torch.utils.data import Dataset
 import torch.nn as nn
@@ -53,7 +52,6 @@ def build_vocab(texts, max_vocab):
         tokens = clean_text(text).split()
         counter.update(tokens)
     most_common = counter.most_common(max_vocab - 2)
-    # Reserve 0 for PAD, 1 for UNK
     word2idx = {w: idx+2 for idx, (w, _) in enumerate(most_common)}
     word2idx['<PAD>'] = 0
     word2idx['<UNK>'] = 1
@@ -82,25 +80,43 @@ class TextDataset(Dataset):
     def __init__(self, texts, labels, word2idx, max_len):
         self.X = encode_texts(texts, word2idx, max_len)
         self.y = torch.tensor(labels, dtype=torch.float32)
+
     def __len__(self):
         return len(self.y)
+
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx]
 
 # ────────────────────────────────────────────────────────────────────────────────
-# 4) RNN Model
+# 4) RNN/LSTM/GRU Model
 # ────────────────────────────────────────────────────────────────────────────────
 class RNNClassifier(nn.Module):
-    def __init__(self, vocab_size, embed_dim, rnn_units, num_layers, bidirectional=False):
+    def __init__(
+        self,
+        vocab_size,
+        embed_dim,
+        rnn_units,
+        num_layers=1,
+        bidirectional=False,
+        rnn_type='rnn'  # one of: 'rnn', 'lstm', 'gru'
+    ):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
-        self.rnn = nn.RNN(
+        rnn_type = rnn_type.lower()
+        rnn_kwargs = dict(
             input_size=embed_dim,
             hidden_size=rnn_units,
             num_layers=num_layers,
             batch_first=True,
             bidirectional=bidirectional
         )
+        if rnn_type == 'lstm':
+            self.rnn = nn.LSTM(**rnn_kwargs)
+        elif rnn_type == 'gru':
+            self.rnn = nn.GRU(**rnn_kwargs)
+        else:
+            self.rnn = nn.RNN(**rnn_kwargs)
+
         direction_factor = 2 if bidirectional else 1
         self.fc = nn.Linear(rnn_units * direction_factor, 1)
 
@@ -108,7 +124,6 @@ class RNNClassifier(nn.Module):
         # x: [batch, seq_len]
         emb = self.embedding(x)  # [batch, seq_len, embed_dim]
         out, _ = self.rnn(emb)   # out: [batch, seq_len, hidden*dir]
-        # take last time-step
-        last = out[:, -1, :]
+        last = out[:, -1, :]     # last time-step
         logits = self.fc(last).squeeze(1)
         return logits

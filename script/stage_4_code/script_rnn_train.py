@@ -41,7 +41,15 @@ EPOCHS      = 10
 MODEL_PATH  = 'rnn_model.pth'
 HIST_PATH   = 'history.json'
 CURVE_PATH  = 'learning_curves.png'
-DEVICE      = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if torch.cuda.is_available():
+    DEVICE = torch.device("cuda")
+    print("Using CUDA")
+elif torch.backends.mps.is_available():     # for Apple Silicon
+    DEVICE = torch.device("mps")
+    print("Using MPS")
+else:
+    DEVICE = torch.device("cpu")
+    print("Using CPU")
 # ────────────────────────────────────────────────────────────────────────────────
 
 # 1) Load data
@@ -58,7 +66,7 @@ train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
 test_loader  = DataLoader(test_ds,  batch_size=BATCH_SIZE)
 
 # 3) Model, loss, optimizer
-model = RNNClassifier(vocab_size, EMBED_DIM, RNN_UNITS, NUM_LAYERS, BIDIR).to(DEVICE)
+model = RNNClassifier(vocab_size, EMBED_DIM, RNN_UNITS, NUM_LAYERS, BIDIR, 'lstm').to(DEVICE)
 criterion = nn.BCEWithLogitsLoss()
 optimizer = optim.Adam(model.parameters(), lr=LR)
 
