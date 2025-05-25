@@ -30,7 +30,7 @@ def load_data(dataset_dir, split):
     return texts, labels
 
 
-def clean_text_simple(text):
+def clean_text(text):
     """
     Simpler cleaning that preserves more natural language structure.
     Good for language modeling where you want to keep sentence flow.
