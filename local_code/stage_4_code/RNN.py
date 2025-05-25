@@ -30,15 +30,24 @@ def load_data(dataset_dir, split):
     return texts, labels
 
 
-def clean_text(text):
+def clean_text(text, mode="classification"):
     """
     Lowercase, strip HTML tags, remove punctuation.
     """
-    text = text.lower()
-    text = re.sub(r'<br\s*/?>', ' ', text)
-    text = re.sub(r'http[s]?://\S+', ' ', text)  # Remove URLs
-    text = re.sub(r'www\.\S+', ' ', text)  # Remove www links
-    text = text.translate(str.maketrans('', '', string.punctuation))
+    if mode == "classification":
+        text = text.lower()
+        text = re.sub(r'<br\s*/?>', ' ', text)
+        text = re.sub(r'http[s]?://\S+', ' ', text)  # Remove URLs
+        text = re.sub(r'www\.\S+', ' ', text)  # Remove www links
+        text = text.translate(str.maketrans('', '', string.punctuation))
+    elif mode == "generation":
+        text = text.lower()
+        text = re.sub(r'<br\s*/?>', ' ', text)
+        text = re.sub(r'http[s]?://\S+', ' ', text)
+        text = re.sub(r'www\.\S+', ' ', text)
+        text = re.sub(r'["""''`~@#$%^&*+=\[\]{}\\|<>]', '', text)
+        text = re.sub(r'\s+', ' ', text)
+        text = text.strip()
     return text
 
 
@@ -89,7 +98,7 @@ def create_embedding_matrix(word2idx, glove_embeddings, embed_dim):
 # ────────────────────────────────────────────────────────────────────────────────
 # 3) Vocabulary building and encoding
 # ────────────────────────────────────────────────────────────────────────────────
-def build_vocab(texts, max_vocab, glove_embeddings=None):
+def build_vocab(texts, max_vocab, glove_embeddings=None, mode="classification"):
     """
     Build a word2idx mapping of the most common max_vocab-2 words, with 0 for PAD and 1 for UNK.
     If glove_embeddings provided, prioritize words that exist in GloVe.
@@ -97,7 +106,7 @@ def build_vocab(texts, max_vocab, glove_embeddings=None):
     """
     counter = Counter()
     for text in texts:
-        tokens = clean_text(text).split()
+        tokens = clean_text(text, mode=mode).split()
         counter.update(tokens)
 
     # If using GloVe, prioritize words that exist in GloVe embeddings
@@ -142,13 +151,13 @@ def build_vocab(texts, max_vocab, glove_embeddings=None):
     return word2idx, idx2word
 
 
-def encode_texts(texts, word2idx, max_len):
+def encode_texts(texts, word2idx, max_len, mode="classification"):
     """
     Convert list of raw texts to a tensor of shape (len(texts), max_len) of indices.
     """
     sequences = []
     for text in texts:
-        tokens = clean_text(text).split()
+        tokens = clean_text(text, mode=mode).split()
         idxs = [word2idx.get(tok, 1) for tok in tokens]
         if len(idxs) < max_len:
             idxs += [0] * (max_len - len(idxs))
@@ -162,8 +171,8 @@ def encode_texts(texts, word2idx, max_len):
 # 4) PyTorch Dataset
 # ────────────────────────────────────────────────────────────────────────────────
 class TextDataset(Dataset):
-    def __init__(self, texts, labels, word2idx, max_len):
-        self.X = encode_texts(texts, word2idx, max_len)
+    def __init__(self, texts, labels, word2idx, max_len, mode="classification"):
+        self.X = encode_texts(texts, word2idx, max_len, mode=mode)
         self.y = torch.tensor(labels, dtype=torch.float32)
 
     def __len__(self):
@@ -235,18 +244,42 @@ class RNNClassifier(nn.Module):
 
 
 # ────────────────────────────────────────────────────────────────────────────────
-# 6) Language Model Dataset and Model (FIXED INDENTATION)
+# 6) Language Model Dataset and Model (UPDATED FOR GENERATION MODE)
 # ────────────────────────────────────────────────────────────────────────────────
 def build_lm_dataset(texts, word2idx, seq_len):
     """Build language modeling dataset for next-word prediction."""
     examples = []
     for t in texts:
-        idxs = [word2idx.get(tok, 1) for tok in clean_text(t).split()]
+        idxs = [word2idx.get(tok, 1) for tok in clean_text(t, mode="generation").split()]
         for i in range(len(idxs) - seq_len):
             examples.append((idxs[i:i + seq_len], idxs[i + seq_len]))
     X = torch.tensor([e[0] for e in examples], dtype=torch.long)
     y = torch.tensor([e[1] for e in examples], dtype=torch.long)
     return TensorDataset(X, y)
+
+
+def build_vocab_for_lm(texts, max_vocab, glove_embeddings=None):
+    """
+    Build vocabulary specifically for language modeling (uses generation mode).
+    """
+    return build_vocab(texts, max_vocab, glove_embeddings, mode="generation")
+
+
+def setup_glove_embeddings_for_lm(texts, glove_path, max_vocab):
+    """
+    Convenience function to set up vocabulary and embeddings with GloVe for language modeling.
+    Always uses generation mode.
+    """
+    # Load GloVe embeddings
+    glove_embeddings, embed_dim = load_glove_embeddings(glove_path)
+
+    # Build vocabulary with GloVe prioritization using generation mode
+    word2idx, idx2word = build_vocab(texts, max_vocab, glove_embeddings, mode="generation")
+
+    # Create embedding matrix
+    embedding_matrix = create_embedding_matrix(word2idx, glove_embeddings, embed_dim)
+
+    return word2idx, idx2word, embedding_matrix, embed_dim
 
 
 class RNNLanguageModel(nn.Module):
@@ -290,7 +323,7 @@ class RNNLanguageModel(nn.Module):
 
 
 # ────────────────────────────────────────────────────────────────────────────────
-# 7) Text Generation Utility
+# 7) Text Generation Utility (UPDATED FOR GENERATION MODE)
 # ────────────────────────────────────────────────────────────────────────────────
 def generate_text(model, word2idx, idx2word, seed_text,
                   gen_len=100, seq_len=5, temperature=1.0, device=None):
@@ -298,7 +331,7 @@ def generate_text(model, word2idx, idx2word, seed_text,
     if device is None:
         device = next(model.parameters()).device
     model.eval()
-    tokens = clean_text(seed_text).split()
+    tokens = clean_text(seed_text, mode="generation").split()
     gen = [word2idx.get(tok, 1) for tok in tokens]
     hidden = None
     for _ in range(gen_len):
@@ -313,9 +346,9 @@ def generate_text(model, word2idx, idx2word, seed_text,
 
 
 # ────────────────────────────────────────────────────────────────────────────────
-# 8) Convenience function to set up GloVe embeddings
+# 8) Convenience function to set up GloVe embeddings (CLASSIFICATION DEFAULT)
 # ────────────────────────────────────────────────────────────────────────────────
-def setup_glove_embeddings(texts, glove_path, max_vocab):
+def setup_glove_embeddings(texts, glove_path, max_vocab, mode="classification"):
     """
     Convenience function to set up vocabulary and embeddings with GloVe.
 
@@ -323,6 +356,7 @@ def setup_glove_embeddings(texts, glove_path, max_vocab):
         texts: List of training texts
         glove_path: Path to GloVe embeddings file (e.g., 'glove.6B.100d.txt')
         max_vocab: Maximum vocabulary size
+        mode: "classification" or "generation" for different text cleaning
 
     Returns:
         word2idx: Word to index mapping
@@ -334,7 +368,7 @@ def setup_glove_embeddings(texts, glove_path, max_vocab):
     glove_embeddings, embed_dim = load_glove_embeddings(glove_path)
 
     # Build vocabulary with GloVe prioritization
-    word2idx, idx2word = build_vocab(texts, max_vocab, glove_embeddings)
+    word2idx, idx2word = build_vocab(texts, max_vocab, glove_embeddings, mode=mode)
 
     # Create embedding matrix
     embedding_matrix = create_embedding_matrix(word2idx, glove_embeddings, embed_dim)
