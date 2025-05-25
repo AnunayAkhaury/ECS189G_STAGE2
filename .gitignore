@@ -9,3 +9,7 @@ train.csv
 /data/stage_3_data/ReadMe.pages
 /data/stage_3_data/ReadMe.pdf
 /data/stage_3_data/ReadMe.txt
+/data/stage_4_data/glove.6B.50d.txt
+/data/stage_4_data/glove.6B.100d.txt
+/data/stage_4_data/glove.6B.200d.txt
+/data/stage_4_data/glove.6B.300d.txt

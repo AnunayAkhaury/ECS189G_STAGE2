@@ -1,16 +1,18 @@
-# RNN.py
 """
 RNN.py
 
 Provides data loading, preprocessing, vocabulary building, dataset class, and RNN/LSTM/GRU model for text classification.
+Updated to support GloVe embeddings.
 """
 import os
 import re
 import string
 from collections import Counter
+import numpy as np
 import torch
 from torch.utils.data import Dataset, TensorDataset
 import torch.nn as nn
+
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 1) Data loading and preprocessing
@@ -37,23 +39,104 @@ def clean_text(text):
     text = text.translate(str.maketrans('', '', string.punctuation))
     return text
 
+
 # ────────────────────────────────────────────────────────────────────────────────
-# 2) Vocabulary building and encoding
+# 2) GloVe embeddings loading
 # ────────────────────────────────────────────────────────────────────────────────
-def build_vocab(texts, max_vocab):
+def load_glove_embeddings(glove_path):
+    """
+    Load GloVe embeddings from file.
+    Returns dictionary mapping words to embedding vectors.
+    """
+    print(f"Loading GloVe embeddings from {glove_path}...")
+    embeddings_dict = {}
+
+    with open(glove_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            values = line.split()
+            word = values[0]
+            vector = np.array(values[1:], dtype='float32')
+            embeddings_dict[word] = vector
+
+    embed_dim = len(next(iter(embeddings_dict.values())))
+    print(f"Loaded {len(embeddings_dict)} word vectors of dimension {embed_dim}")
+    return embeddings_dict, embed_dim
+
+
+def create_embedding_matrix(word2idx, glove_embeddings, embed_dim):
+    """
+    Create embedding matrix from GloVe embeddings for words in vocabulary.
+    Words not found in GloVe will have random embeddings.
+    """
+    vocab_size = len(word2idx)
+    embedding_matrix = np.random.normal(scale=0.6, size=(vocab_size, embed_dim))
+
+    # Set padding token to zeros
+    embedding_matrix[0] = np.zeros(embed_dim)
+
+    found_words = 0
+    for word, idx in word2idx.items():
+        if word in glove_embeddings:
+            embedding_matrix[idx] = glove_embeddings[word]
+            found_words += 1
+
+    print(f"Found {found_words}/{vocab_size} words in GloVe embeddings")
+    return torch.tensor(embedding_matrix, dtype=torch.float32)
+
+
+# ────────────────────────────────────────────────────────────────────────────────
+# 3) Vocabulary building and encoding
+# ────────────────────────────────────────────────────────────────────────────────
+def build_vocab(texts, max_vocab, glove_embeddings=None):
     """
     Build a word2idx mapping of the most common max_vocab-2 words, with 0 for PAD and 1 for UNK.
+    If glove_embeddings provided, prioritize words that exist in GloVe.
     Returns both word2idx and idx2word dictionaries.
     """
     counter = Counter()
     for text in texts:
         tokens = clean_text(text).split()
         counter.update(tokens)
-    most_common = counter.most_common(max_vocab - 2)
-    word2idx = {w: idx+2 for idx, (w, _) in enumerate(most_common)}
+
+    # If using GloVe, prioritize words that exist in GloVe embeddings
+    if glove_embeddings is not None:
+        # Separate words into those in GloVe and those not in GloVe
+        glove_words = []
+        non_glove_words = []
+
+        for word, count in counter.most_common():
+            if word in glove_embeddings:
+                glove_words.append((word, count))
+            else:
+                non_glove_words.append((word, count))
+
+        # Take most common words, prioritizing GloVe words
+        selected_words = []
+        remaining_slots = max_vocab - 2  # Reserve slots for PAD and UNK
+
+        # First add GloVe words
+        for word, count in glove_words:
+            if len(selected_words) < remaining_slots:
+                selected_words.append(word)
+
+        # Then add non-GloVe words if there's space
+        for word, count in non_glove_words:
+            if len(selected_words) < remaining_slots:
+                selected_words.append(word)
+
+        print(
+            f"Selected {len([w for w in selected_words if w in glove_embeddings])} GloVe words out of {len(selected_words)} total words")
+    else:
+        # Original behavior - just take most common words
+        most_common = counter.most_common(max_vocab - 2)
+        selected_words = [word for word, _ in most_common]
+
+    # Create mappings
+    word2idx = {w: idx + 2 for idx, w in enumerate(selected_words)}
     word2idx['<PAD>'] = 0
     word2idx['<UNK>'] = 1
     idx2word = {idx: word for word, idx in word2idx.items()}
+
     return word2idx, idx2word
 
 
@@ -72,8 +155,9 @@ def encode_texts(texts, word2idx, max_len):
         sequences.append(idxs)
     return torch.tensor(sequences, dtype=torch.long)
 
+
 # ────────────────────────────────────────────────────────────────────────────────
-# 3) PyTorch Dataset
+# 4) PyTorch Dataset
 # ────────────────────────────────────────────────────────────────────────────────
 class TextDataset(Dataset):
     def __init__(self, texts, labels, word2idx, max_len):
@@ -86,24 +170,38 @@ class TextDataset(Dataset):
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx]
 
+
 # ────────────────────────────────────────────────────────────────────────────────
-# 4) RNN/LSTM/GRU Model for Classification
+# 5) RNN/LSTM/GRU Model for Classification with GloVe Support
 # ────────────────────────────────────────────────────────────────────────────────
 class RNNClassifier(nn.Module):
     def __init__(
-        self,
-        vocab_size,
-        embed_dim,
-        rnn_units,
-        num_layers=2,
-        bidirectional=True,
-        rnn_type='lstm',       # 'lstm', 'gru', or 'rnn'
-        dropout=0.3,
-        use_attention=False
+            self,
+            vocab_size,
+            embed_dim,
+            rnn_units,
+            num_layers=2,
+            bidirectional=True,
+            rnn_type='lstm',  # 'lstm', 'gru', or 'rnn'
+            dropout=0.3,
+            use_attention=False,
+            pretrained_embeddings=None,
+            freeze_embeddings=False
     ):
         super().__init__()
         self.use_attention = use_attention
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
+
+        # Load pre-trained embeddings if provided
+        if pretrained_embeddings is not None:
+            print("Loading pre-trained embeddings...")
+            self.embedding.weight.data.copy_(pretrained_embeddings)
+            if freeze_embeddings:
+                self.embedding.weight.requires_grad = False
+                print("Embeddings frozen (will not be updated during training)")
+            else:
+                print("Embeddings will be fine-tuned during training")
+
         self.embed_dropout = nn.Dropout(dropout)
 
         rnn_kwargs = dict(
@@ -112,11 +210,11 @@ class RNNClassifier(nn.Module):
             num_layers=num_layers,
             batch_first=True,
             bidirectional=bidirectional,
-            dropout=dropout if num_layers>1 else 0.0
+            dropout=dropout if num_layers > 1 else 0.0
         )
-        if rnn_type=='gru':
+        if rnn_type == 'gru':
             self.rnn = nn.GRU(**rnn_kwargs)
-        elif rnn_type=='lstm':
+        elif rnn_type == 'lstm':
             self.rnn = nn.LSTM(**rnn_kwargs)
         else:
             self.rnn = nn.RNN(**rnn_kwargs)
@@ -129,25 +227,26 @@ class RNNClassifier(nn.Module):
 
     def forward(self, x):
         # x: [B, T]
-        emb = self.embed_dropout(self.embedding(x))    # [B, T, E]
-        out, _ = self.rnn(emb)                         # [B, T, H*dir]
+        emb = self.embed_dropout(self.embedding(x))  # [B, T, E]
+        out, _ = self.rnn(emb)  # [B, T, H*dir]
 
         if self.use_attention:
             # attention scores over T
-            scores  = self.attn(out).squeeze(-1)       # [B, T]
-            weights = torch.softmax(scores, dim=1)     # [B, T]
+            scores = self.attn(out).squeeze(-1)  # [B, T]
+            weights = torch.softmax(scores, dim=1)  # [B, T]
             # weighted sum of hidden states
-            h       = (out * weights.unsqueeze(-1)).sum(1)  # [B, H*dir]
+            h = (out * weights.unsqueeze(-1)).sum(1)  # [B, H*dir]
         else:
             # just take the final time-step
-            h = out[:, -1, :]                          # [B, H*dir]
+            h = out[:, -1, :]  # [B, H*dir]
 
         h = self.fc_dropout(h)
-        logits = self.fc(h).squeeze(1)                 # [B]
+        logits = self.fc(h).squeeze(1)  # [B]
         return logits
 
+
 # ────────────────────────────────────────────────────────────────────────────────
-# 5) Language Model Dataset and Model (FIXED INDENTATION)
+# 6) Language Model Dataset and Model (FIXED INDENTATION)
 # ────────────────────────────────────────────────────────────────────────────────
 def build_lm_dataset(texts, word2idx, seq_len):
     """Build language modeling dataset for next-word prediction."""
@@ -163,11 +262,19 @@ def build_lm_dataset(texts, word2idx, seq_len):
 
 class RNNLanguageModel(nn.Module):
     """RNN Language Model for text generation."""
+
     def __init__(self, vocab_size, embed_dim, rnn_units,
                  num_layers=2, bidirectional=False,
-                 rnn_type="lstm", dropout=0.3):
+                 rnn_type="lstm", dropout=0.3,
+                 pretrained_embeddings=None, freeze_embeddings=False):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
+
+        # Load pre-trained embeddings if provided
+        if pretrained_embeddings is not None:
+            self.embedding.weight.data.copy_(pretrained_embeddings)
+            if freeze_embeddings:
+                self.embedding.weight.requires_grad = False
 
         rnn_args = dict(
             input_size=embed_dim,
@@ -192,8 +299,9 @@ class RNNLanguageModel(nn.Module):
         out, hidden = self.rnn(emb, hidden)
         return self.fc(out), hidden  # [B,T,V], hidden
 
+
 # ────────────────────────────────────────────────────────────────────────────────
-# 6) Text Generation Utility
+# 7) Text Generation Utility
 # ────────────────────────────────────────────────────────────────────────────────
 def generate_text(model, word2idx, idx2word, seed_text,
                   gen_len=100, seq_len=5, temperature=1.0, device=None):
@@ -213,3 +321,33 @@ def generate_text(model, word2idx, idx2word, seed_text,
         nxt = torch.multinomial(probs, 1).item()
         gen.append(nxt)
     return " ".join(idx2word.get(i, '<UNK>') for i in gen)
+
+
+# ────────────────────────────────────────────────────────────────────────────────
+# 8) Convenience function to set up GloVe embeddings
+# ────────────────────────────────────────────────────────────────────────────────
+def setup_glove_embeddings(texts, glove_path, max_vocab):
+    """
+    Convenience function to set up vocabulary and embeddings with GloVe.
+
+    Args:
+        texts: List of training texts
+        glove_path: Path to GloVe embeddings file (e.g., 'glove.6B.100d.txt')
+        max_vocab: Maximum vocabulary size
+
+    Returns:
+        word2idx: Word to index mapping
+        idx2word: Index to word mapping
+        embedding_matrix: Pre-trained embedding matrix
+        embed_dim: Embedding dimension
+    """
+    # Load GloVe embeddings
+    glove_embeddings, embed_dim = load_glove_embeddings(glove_path)
+
+    # Build vocabulary with GloVe prioritization
+    word2idx, idx2word = build_vocab(texts, max_vocab, glove_embeddings)
+
+    # Create embedding matrix
+    embedding_matrix = create_embedding_matrix(word2idx, glove_embeddings, embed_dim)
+
+    return word2idx, idx2word, embedding_matrix, embed_dim
