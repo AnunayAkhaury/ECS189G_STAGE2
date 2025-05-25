@@ -32,10 +32,10 @@ USE_GLOVE = True  # Set to False to use random embeddings instead
 FREEZE_EMBEDDINGS = False  # Set to True to freeze GloVe embeddings during training
 
 BATCH_SIZE = 128
-MAX_VOCAB = 20000
+MAX_VOCAB = 10000
 MAX_LEN = 200
 # EMBED_DIM will be determined by GloVe file (e.g., 100 for glove.6B.100d.txt)
-RNN_UNITS = 128 #
+RNN_UNITS = 256 #
 NUM_LAYERS = 2 #
 BIDIR = True
 RNN_TYPE = 'lstm'  # 'lstm', 'gru', or 'rnn' #
