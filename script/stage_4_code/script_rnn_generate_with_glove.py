@@ -97,6 +97,39 @@ def main():
         pretrained_embeddings = None
 
     vocab_size = len(word2idx)
+
+    # Add this debug code to your generation script after loading the model:
+
+    print(f"\n=== DEBUGGING UNK TOKENS ===")
+    print(f"Vocabulary size: {len(word2idx)}")
+    print(f"UNK token index: {word2idx.get('<UNK>', 'NOT FOUND')}")
+
+    # Check if your seed text tokens are in vocabulary
+    from RNN import clean_text
+    seed_cleaned = clean_text("what do you call a", mode="generation")
+    print(f"Seed text cleaned: '{seed_cleaned}'")
+    seed_tokens = seed_cleaned.split()
+    print(f"Seed tokens: {seed_tokens}")
+
+    for token in seed_tokens:
+        idx = word2idx.get(token, -1)
+        if idx == -1:
+            print(f"  ❌ '{token}' -> NOT IN VOCAB!")
+        elif idx == 1:  # UNK index
+            print(f"  ⚠️  '{token}' -> UNK (index 1)")
+        else:
+            print(f"  ✅ '{token}' -> {idx}")
+
+    # Check what word index 1 maps to
+    print(f"\nIndex 1 maps to: '{idx2word.get(1, 'MISSING')}'")
+
+    # Show some high-index words (these might be getting generated)
+    max_idx = len(word2idx) - 1
+    print(f"Max vocabulary index: {max_idx}")
+    print(f"Last few words in vocab:")
+    for i in range(max(0, max_idx - 5), max_idx + 1):
+        print(f"  {i}: '{idx2word.get(i, 'MISSING')}'")
+
     print(f"Vocabulary size: {vocab_size}")
 
     # build language modeling dataset
