@@ -346,6 +346,7 @@ class RNNLanguageModel(nn.Module):
 def generate_text(model, word2idx, idx2word, seed_text,
                   gen_len=100, seq_len=5, temperature=1.0, device=None):
     """Generate text using a trained language model."""
+    print(word2idx.keys())
     if device is None:
         device = next(model.parameters()).device
     model.eval()
