@@ -120,6 +120,39 @@ def main():
         else:
             print(f"  ✅ '{token}' -> {idx}")
 
+    # Add this debug code to check if question marks are the UNK culprit:
+
+    print(f"\n=== QUESTION MARK DEBUG ===")
+    print(f"Is '?' in word2idx? {'?' in word2idx}")
+    if '?' in word2idx:
+        qmark_idx = word2idx['?']
+        print(f"Question mark index: {qmark_idx}")
+        print(f"Does idx2word have this index? {qmark_idx in idx2word}")
+        print(f"idx2word[{qmark_idx}] = '{idx2word.get(qmark_idx, 'MISSING')}'")
+    else:
+        print("❌ Question mark NOT in vocabulary!")
+
+    # Check what punctuation IS in vocabulary
+    punct_in_vocab = [token for token in word2idx.keys() if not token.isalpha() and token not in ['<PAD>', '<UNK>']]
+    print(f"Punctuation in vocabulary: {punct_in_vocab}")
+
+    # Test cleaning on a simple question
+    test_question = "What do you call a chicken?"
+    cleaned = clean_text(test_question, mode="generation")
+    print(f"\nTest cleaning:")
+    print(f"Original: '{test_question}'")
+    print(f"Cleaned:  '{cleaned}'")
+    print(f"Tokens:   {cleaned.split()}")
+
+    # Check if all tokens are in vocabulary
+    for token in cleaned.split():
+        if token in word2idx:
+            print(f"  ✅ '{token}' -> {word2idx[token]}")
+        else:
+            print(f"  ❌ '{token}' -> NOT IN VOCAB (will be UNK)")
+
+    print("=== END DEBUG ===\n")
+
     # Check what word index 1 maps to
     print(f"\nIndex 1 maps to: '{idx2word.get(1, 'MISSING')}'")
 
