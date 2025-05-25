@@ -167,6 +167,13 @@ def build_vocab(texts, max_vocab, glove_embeddings=None, mode="classification"):
     word2idx['<UNK>'] = 1
     idx2word = {idx: word for word, idx in word2idx.items()}
 
+    if '?' not in word2idx and mode == "generation":
+        # Find an unused index
+        max_idx = max(word2idx.values())
+        word2idx['?'] = max_idx + 1
+        idx2word[max_idx + 1] = '?'
+        print("Manually added question mark to vocabulary")
+
     return word2idx, idx2word
 
 
