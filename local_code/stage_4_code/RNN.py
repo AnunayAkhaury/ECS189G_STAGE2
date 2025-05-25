@@ -164,7 +164,7 @@ def build_vocab(texts, max_vocab, glove_embeddings=None, mode="classification"):
     word2idx = {w: idx + 2 for idx, w in enumerate(selected_words)}
     word2idx['<PAD>'] = 0
     word2idx['<UNK>'] = 1
-    word2idx['?>'] = 3
+    word2idx['?'] = 3
     idx2word = {idx: word for word, idx in word2idx.items()}
 
     return word2idx, idx2word
