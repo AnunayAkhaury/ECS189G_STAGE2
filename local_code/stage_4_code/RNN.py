@@ -363,6 +363,7 @@ def generate_text(model, word2idx, idx2word, seed_text,
         nxt = torch.multinomial(probs, 1).item()
         # !!!!
         print(f"\n=== GENERATION DEBUG ===")
+        vocab_size = len(word2idx)
         print(f"Vocab size: {vocab_size}")
         print(f"Starting tokens: {[idx2word.get(i, '<UNK>') for i in gen]}")
 
