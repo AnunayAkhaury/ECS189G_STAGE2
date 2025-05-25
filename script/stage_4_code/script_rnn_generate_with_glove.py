@@ -104,7 +104,7 @@ def main():
     print(f"Vocabulary size: {len(word2idx)}")
     print(f"UNK token index: {word2idx.get('<UNK>', 'NOT FOUND')}")
 
-    # Check if your seed text tokens are in vocabulary
+    # Check if your seed text tokens are in vocabulary !!!!!!
     from RNN import clean_text
     seed_cleaned = clean_text("what do you call a", mode="generation")
     print(f"Seed text cleaned: '{seed_cleaned}'")
@@ -129,7 +129,7 @@ def main():
     print(f"Last few words in vocab:")
     for i in range(max(0, max_idx - 5), max_idx + 1):
         print(f"  {i}: '{idx2word.get(i, 'MISSING')}'")
-
+    #!!!!!!!!!
     print(f"Vocabulary size: {vocab_size}")
 
     # build language modeling dataset
@@ -152,7 +152,26 @@ def main():
 
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
     print(f"Trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")
+#!!!!
+    print(f"\n=== MODEL ARCHITECTURE DEBUG ===")
+    print(f"Expected vocab_size: {vocab_size}")
+    print(f"Model's final layer output size: {model.fc.out_features}")
+    print(f"Model's embedding layer vocab size: {model.embedding.num_embeddings}")
 
+    # Test the model output shape
+    dummy_input = torch.randint(0, vocab_size, (1, args.seq_len)).to(device)
+    with torch.no_grad():
+        logits, _ = model(dummy_input)
+        print(f"Model output shape: {logits.shape}")
+        print(f"Logits last dimension: {logits.shape[-1]}")
+        print(f"Max possible index from this output: {logits.shape[-1] - 1}")
+
+    print(f"=== VOCABULARY MAPPING DEBUG ===")
+    print(f"word2idx length: {len(word2idx)}")
+    print(f"idx2word length: {len(idx2word)}")
+    print(f"Max index in idx2word: {max(idx2word.keys()) if idx2word else 'EMPTY'}")
+    print(f"=== END DEBUG ===\n")
+# !!!!
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
