@@ -34,18 +34,16 @@ def clean_text(text, mode="classification"):
     """
     Lowercase, strip HTML tags, remove punctuation.
     """
-    if mode == "classification" or mode == "generation":
+    if mode == "classification":
         text = text.lower()
-        text = re.sub(r'<br\s*/?>', ' ', text)
         text = re.sub(r'http[s]?://\S+', ' ', text)  # Remove URLs
         text = re.sub(r'www\.\S+', ' ', text)  # Remove www links
         text = text.translate(str.maketrans('', '', string.punctuation))
-    elif mode == " ":
+    elif mode == "generation":
         # Keep only question marks - remove all other punctuation
         text = text.lower()
 
         # Remove HTML and URLs
-        text = re.sub(r'<br\s*/?>', ' ', text)
         text = re.sub(r'http[s]?://\S+', ' ', text)
         text = re.sub(r'www\.\S+', ' ', text)
 
