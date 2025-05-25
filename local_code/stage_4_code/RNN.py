@@ -32,30 +32,13 @@ def load_data(dataset_dir, split):
 
 def clean_text(text):
     """
-    Simpler cleaning that preserves more natural language structure.
-    Good for language modeling where you want to keep sentence flow.
+    Lowercase, strip HTML tags, remove punctuation.
     """
-    if not text or not isinstance(text, str):
-        return ""
-
-    # Convert to lowercase
     text = text.lower()
-
-    # Remove URLs and web content
-    text = re.sub(r'http[s]?://\S+', ' ', text)
-    text = re.sub(r'www\.\S+', ' ', text)
-    text = re.sub(r'\S+\.com\S*', ' ', text)
-    text = re.sub(r'\S+\.org\S*', ' ', text)
-    text = re.sub(r'\S+\.net\S*', ' ', text)
-
-    # Keep basic punctuation for sentence structure
-    # Only remove excessive punctuation
-    text = re.sub(r'[^\w\s.,!?;:\-\']', ' ', text)
-
-    # Clean up whitespace
-    text = re.sub(r'\s+', ' ', text)
-    text = text.strip()
-
+    text = re.sub(r'<br\s*/?>', ' ', text)
+    text = re.sub(r'http[s]?://\S+', ' ', text)  # Remove URLs
+    text = re.sub(r'www\.\S+', ' ', text)  # Remove www links
+    text = text.translate(str.maketrans('', '', string.punctuation))
     return text
 
 
