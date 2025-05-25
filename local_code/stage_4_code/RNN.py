@@ -361,6 +361,34 @@ def generate_text(model, word2idx, idx2word, seed_text,
         logits = logits[0, -1] / temperature
         probs = torch.softmax(logits, dim=-1)
         nxt = torch.multinomial(probs, 1).item()
+        # !!!!
+        print(f"\n=== GENERATION DEBUG ===")
+        print(f"Vocab size: {vocab_size}")
+        print(f"Starting tokens: {[idx2word.get(i, '<UNK>') for i in gen]}")
+
+        for step in range(gen_len):
+            inp = torch.tensor([gen[-seq_len:]], dtype=torch.long, device=device)
+            with torch.no_grad():
+                logits, hidden = model(inp, hidden)
+
+            # DEBUG: Check logits shape and range
+            step_logits = logits[0, -1] / temperature
+            print(f"Step {step}: logits shape = {step_logits.shape}, max_val = {step_logits.max().item():.2f}")
+
+            probs = torch.softmax(step_logits, dim=-1)
+            nxt = torch.multinomial(probs, 1).item()
+
+            # DEBUG: Check generated index
+            if nxt >= vocab_size:
+                print(f"  ❌ INVALID INDEX: {nxt} >= {vocab_size}")
+                nxt = 1  # Force to UNK
+            elif nxt not in idx2word:
+                print(f"  ❌ INDEX NOT IN VOCAB: {nxt}")
+                nxt = 1
+            else:
+                word = idx2word.get(nxt, '<UNK>')
+                print(f"  ✅ Generated: {nxt} -> '{word}'")
+            #!!!!
         gen.append(nxt)
     return " ".join(idx2word.get(i, '<UNK>') for i in gen)
 
