@@ -360,6 +360,7 @@ def generate_text(model, word2idx, idx2word, seed_text,
         probs = torch.softmax(logits, dim=-1)
         nxt = torch.multinomial(probs, 1).item()
         gen.append(nxt)
+    print(gen)
     return " ".join(idx2word.get(i, '') for i in gen)
 
 
