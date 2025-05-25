@@ -157,14 +157,14 @@ def build_vocab(texts, max_vocab, glove_embeddings=None, mode="classification"):
         print(
             f"Selected {len([w for w in selected_words if w in glove_embeddings])} GloVe words out of {len(selected_words)} total words")
     else:
-        most_common = counter.most_common(max_vocab - 2)
+        most_common = counter.most_common(max_vocab - 3)
         selected_words = [word for word, _ in most_common]
 
     # Create mappings
-    word2idx = {w: idx + 2 for idx, w in enumerate(selected_words)}
+    word2idx = {w: idx + 3 for idx, w in enumerate(selected_words)}
     word2idx['<PAD>'] = 0
     word2idx['<UNK>'] = 1
-    word2idx['?'] = 3
+    word2idx['?'] = 2
     idx2word = {idx: word for word, idx in word2idx.items()}
 
     return word2idx, idx2word
