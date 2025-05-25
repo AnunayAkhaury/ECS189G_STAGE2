@@ -157,8 +157,6 @@ def build_vocab(texts, max_vocab, glove_embeddings=None, mode="classification"):
         print(
             f"Selected {len([w for w in selected_words if w in glove_embeddings])} GloVe words out of {len(selected_words)} total words")
     else:
-        # Original behavior - just take most common words
-        print("no glove")
         most_common = counter.most_common(max_vocab - 2)
         selected_words = [word for word, _ in most_common]
 
@@ -167,15 +165,6 @@ def build_vocab(texts, max_vocab, glove_embeddings=None, mode="classification"):
     word2idx['<PAD>'] = 0
     word2idx['<UNK>'] = 1
     idx2word = {idx: word for word, idx in word2idx.items()}
-
-    if '?' not in word2idx and mode == "generation":
-        # Find an unused index
-        max_idx = max(word2idx.values())
-        word2idx['?'] = max_idx + 1
-        idx2word[max_idx + 1] = '?'
-        print("Manually added question mark to vocabulary")
-    else:
-        print("? there")
 
     return word2idx, idx2word
 
@@ -370,35 +359,6 @@ def generate_text(model, word2idx, idx2word, seed_text,
         logits = logits[0, -1] / temperature
         probs = torch.softmax(logits, dim=-1)
         nxt = torch.multinomial(probs, 1).item()
-        # !!!!
-        print(f"\n=== GENERATION DEBUG ===")
-        vocab_size = len(word2idx)
-        print(f"Vocab size: {vocab_size}")
-        print(f"Starting tokens: {[idx2word.get(i, '<UNK>') for i in gen]}")
-
-        for step in range(gen_len):
-            inp = torch.tensor([gen[-seq_len:]], dtype=torch.long, device=device)
-            with torch.no_grad():
-                logits, hidden = model(inp, hidden)
-
-            # DEBUG: Check logits shape and range
-            step_logits = logits[0, -1] / temperature
-            print(f"Step {step}: logits shape = {step_logits.shape}, max_val = {step_logits.max().item():.2f}")
-
-            probs = torch.softmax(step_logits, dim=-1)
-            nxt = torch.multinomial(probs, 1).item()
-
-            # DEBUG: Check generated index
-            if nxt >= vocab_size:
-                print(f"  ❌ INVALID INDEX: {nxt} >= {vocab_size}")
-                nxt = 1  # Force to UNK
-            elif nxt not in idx2word:
-                print(f"  ❌ INDEX NOT IN VOCAB: {nxt}")
-                nxt = 1
-            else:
-                word = idx2word.get(nxt, '<UNK>')
-                print(f"  ✅ Generated: {nxt} -> '{word}'")
-            #!!!!
         gen.append(nxt)
     return " ".join(idx2word.get(i, '<UNK>') for i in gen)
 

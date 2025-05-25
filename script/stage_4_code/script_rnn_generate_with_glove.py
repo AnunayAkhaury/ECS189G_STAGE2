@@ -98,73 +98,6 @@ def main():
 
     vocab_size = len(word2idx)
 
-    # Add this debug code to your generation script after loading the model:
-
-    print(f"\n=== DEBUGGING UNK TOKENS ===")
-    print(f"Vocabulary size: {len(word2idx)}")
-    print(f"UNK token index: {word2idx.get('<UNK>', 'NOT FOUND')}")
-
-    # Check if your seed text tokens are in vocabulary !!!!!!
-    from RNN import clean_text
-    seed_cleaned = clean_text("what do you call a", mode="generation")
-    print(f"Seed text cleaned: '{seed_cleaned}'")
-    seed_tokens = seed_cleaned.split()
-    print(f"Seed tokens: {seed_tokens}")
-
-    for token in seed_tokens:
-        idx = word2idx.get(token, -1)
-        if idx == -1:
-            print(f"  ❌ '{token}' -> NOT IN VOCAB!")
-        elif idx == 1:  # UNK index
-            print(f"  ⚠️  '{token}' -> UNK (index 1)")
-        else:
-            print(f"  ✅ '{token}' -> {idx}")
-
-    # Add this debug code to check if question marks are the UNK culprit:
-
-    print(f"\n=== QUESTION MARK DEBUG ===")
-    print(f"Is '?' in word2idx? {'?' in word2idx}")
-    if '?' in word2idx:
-        qmark_idx = word2idx['?']
-        print(f"Question mark index: {qmark_idx}")
-        print(f"Does idx2word have this index? {qmark_idx in idx2word}")
-        print(f"idx2word[{qmark_idx}] = '{idx2word.get(qmark_idx, 'MISSING')}'")
-    else:
-        print("❌ Question mark NOT in vocabulary!")
-
-    # Check what punctuation IS in vocabulary
-    punct_in_vocab = [token for token in word2idx.keys() if not token.isalpha() and token not in ['<PAD>', '<UNK>']]
-    print(f"Punctuation in vocabulary: {punct_in_vocab}")
-
-    # Test cleaning on a simple question
-    test_question = "What do you call a chicken?"
-    cleaned = clean_text(test_question, mode="generation")
-    print(f"\nTest cleaning:")
-    print(f"Original: '{test_question}'")
-    print(f"Cleaned:  '{cleaned}'")
-    print(f"Tokens:   {cleaned.split()}")
-
-    # Check if all tokens are in vocabulary
-    for token in cleaned.split():
-        if token in word2idx:
-            print(f"  ✅ '{token}' -> {word2idx[token]}")
-        else:
-            print(f"  ❌ '{token}' -> NOT IN VOCAB (will be UNK)")
-
-    print("=== END DEBUG ===\n")
-
-    # Check what word index 1 maps to
-    print(f"\nIndex 1 maps to: '{idx2word.get(1, 'MISSING')}'")
-
-    # Show some high-index words (these might be getting generated)
-    max_idx = len(word2idx) - 1
-    print(f"Max vocabulary index: {max_idx}")
-    print(f"Last few words in vocab:")
-    for i in range(max(0, max_idx - 5), max_idx + 1):
-        print(f"  {i}: '{idx2word.get(i, 'MISSING')}'")
-    #!!!!!!!!!
-    print(f"Vocabulary size: {vocab_size}")
-
     # build language modeling dataset
     lm_dataset = build_lm_dataset(texts, word2idx, args.seq_len)
     train_loader = DataLoader(lm_dataset, batch_size=args.batch_size, shuffle=True)
@@ -185,26 +118,6 @@ def main():
 
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
     print(f"Trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")
-#!!!!
-    print(f"\n=== MODEL ARCHITECTURE DEBUG ===")
-    print(f"Expected vocab_size: {vocab_size}")
-    print(f"Model's final layer output size: {model.fc.out_features}")
-    print(f"Model's embedding layer vocab size: {model.embedding.num_embeddings}")
-
-    # Test the model output shape
-    dummy_input = torch.randint(0, vocab_size, (1, args.seq_len)).to(device)
-    with torch.no_grad():
-        logits, _ = model(dummy_input)
-        print(f"Model output shape: {logits.shape}")
-        print(f"Logits last dimension: {logits.shape[-1]}")
-        print(f"Max possible index from this output: {logits.shape[-1] - 1}")
-
-    print(f"=== VOCABULARY MAPPING DEBUG ===")
-    print(f"word2idx length: {len(word2idx)}")
-    print(f"idx2word length: {len(idx2word)}")
-    print(f"Max index in idx2word: {max(idx2word.keys()) if idx2word else 'EMPTY'}")
-    print(f"=== END DEBUG ===\n")
-# !!!!
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
