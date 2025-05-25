@@ -34,13 +34,13 @@ def clean_text(text, mode="classification"):
     """
     Lowercase, strip HTML tags, remove punctuation.
     """
-    if mode == "classification" or mode == "generation":
+    if mode == "classification":
         text = text.lower()
         text = re.sub(r'<br\s*/?>', ' ', text)
         text = re.sub(r'http[s]?://\S+', ' ', text)  # Remove URLs
         text = re.sub(r'www\.\S+', ' ', text)  # Remove www links
         text = text.translate(str.maketrans('', '', string.punctuation))
-    elif mode == "":
+    elif mode == "generation":
         # Much gentler cleaning for generation
         text = text.lower()
 
@@ -55,15 +55,15 @@ def clean_text(text, mode="classification"):
         text = re.sub(r'\[[^\]]*\]', ' ', text)  # Remove [bracketed content]
 
         # Keep essential punctuation but normalize it
-        text = re.sub(r'[.]{2,}', '.', text)  # Multiple dots to single
-        text = re.sub(r'[!]{2,}', '!', text)  # Multiple exclamations to single
+        text = re.sub(r'[.]{2,}', '', text)  # Multiple dots to single
+        text = re.sub(r'[!]{2,}', '', text)  # Multiple exclamations to single
         text = re.sub(r'[?]{2,}', '?', text)  # Multiple questions to single
 
         # Add spaces around punctuation to separate from words
         text = re.sub(r'([.!?,:;])', r' \1 ', text)
 
         # Remove only problematic special characters (keep basic punctuation)
-        text = re.sub(r'[~@#$%^&*+=\[\]{}\\|<>_]', ' ', text)
+        text = re.sub(r'[~@#$%^&*+=\[\]{}\\|<>_!.]', ' ', text)
 
         # Clean up multiple spaces
         text = re.sub(r'\s+', ' ', text)
