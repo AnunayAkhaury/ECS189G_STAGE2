@@ -158,6 +158,7 @@ def build_vocab(texts, max_vocab, glove_embeddings=None, mode="classification"):
             f"Selected {len([w for w in selected_words if w in glove_embeddings])} GloVe words out of {len(selected_words)} total words")
     else:
         # Original behavior - just take most common words
+        print("no glove")
         most_common = counter.most_common(max_vocab - 2)
         selected_words = [word for word, _ in most_common]
 
@@ -173,6 +174,8 @@ def build_vocab(texts, max_vocab, glove_embeddings=None, mode="classification"):
         word2idx['?'] = max_idx + 1
         idx2word[max_idx + 1] = '?'
         print("Manually added question mark to vocabulary")
+    else:
+        print("? there")
 
     return word2idx, idx2word
 
