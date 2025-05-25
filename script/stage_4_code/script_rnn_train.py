@@ -38,7 +38,6 @@ MAX_LEN = 200
 RNN_UNITS = 128
 NUM_LAYERS = 2
 BIDIR = True
-USE_ATTENTION = True
 RNN_TYPE = 'lstm'  # 'lstm', 'gru', or 'rnn'
 DROPOUT = 0.3
 LR = 1e-3
@@ -132,7 +131,6 @@ model = RNNClassifier(
     bidirectional=BIDIR,
     rnn_type=RNN_TYPE,
     dropout=DROPOUT,
-    use_attention=USE_ATTENTION,
     pretrained_embeddings=pretrained_embeddings,
     freeze_embeddings=FREEZE_EMBEDDINGS
 ).to(DEVICE)
@@ -232,7 +230,6 @@ model_save_dict = {
         'bidirectional': BIDIR,
         'rnn_type': RNN_TYPE,
         'dropout': DROPOUT,
-        'use_attention': USE_ATTENTION,
         'max_len': MAX_LEN,
         'used_glove': USE_GLOVE and os.path.exists(GLOVE_PATH),
         'frozen_embeddings': FREEZE_EMBEDDINGS

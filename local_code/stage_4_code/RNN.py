@@ -184,12 +184,10 @@ class RNNClassifier(nn.Module):
             bidirectional=True,
             rnn_type='lstm',  # 'lstm', 'gru', or 'rnn'
             dropout=0.3,
-            use_attention=False,
             pretrained_embeddings=None,
             freeze_embeddings=False
     ):
         super().__init__()
-        self.use_attention = use_attention
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
 
         # Load pre-trained embeddings if provided
@@ -221,24 +219,13 @@ class RNNClassifier(nn.Module):
 
         direction = 2 if bidirectional else 1
         self.fc_dropout = nn.Dropout(dropout)
-        if use_attention:
-            self.attn = nn.Linear(rnn_units * direction, 1)
         self.fc = nn.Linear(rnn_units * direction, 1)
 
     def forward(self, x):
         # x: [B, T]
         emb = self.embed_dropout(self.embedding(x))  # [B, T, E]
         out, _ = self.rnn(emb)  # [B, T, H*dir]
-
-        if self.use_attention:
-            # attention scores over T
-            scores = self.attn(out).squeeze(-1)  # [B, T]
-            weights = torch.softmax(scores, dim=1)  # [B, T]
-            # weighted sum of hidden states
-            h = (out * weights.unsqueeze(-1)).sum(1)  # [B, H*dir]
-        else:
-            # just take the final time-step
-            h = out[:, -1, :]  # [B, H*dir]
+        h = out[:, -1, :]  # [B, H*dir]
 
         h = self.fc_dropout(h)
         logits = self.fc(h).squeeze(1)  # [B]
