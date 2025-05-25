@@ -4,6 +4,10 @@ RNN.py
 Provides data loading, preprocessing, vocabulary building, dataset class, and RNN/LSTM/GRU model for text classification.
 Updated to support GloVe embeddings.
 """
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
 import os
 import re
 import string
@@ -39,6 +43,15 @@ def clean_text(text, mode="classification"):
         text = re.sub(r'http[s]?://\S+', ' ', text)  # Remove URLs
         text = re.sub(r'www\.\S+', ' ', text)  # Remove www links
         text = text.translate(str.maketrans('', '', string.punctuation))
+
+        tokens = word_tokenize(text)
+        stop_words = set(stopwords.words('english'))
+        tokens = [w for w in tokens if not w in stop_words]
+        porter = PorterStemmer()
+        stemmed = [porter.stem(word) for word in tokens]
+
+        text = " ".join(stemmed)
+
     elif mode == "generation":
         # Keep only question marks - remove all other punctuation
         text = text.lower()
