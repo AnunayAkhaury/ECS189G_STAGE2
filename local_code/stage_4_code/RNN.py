@@ -30,13 +30,32 @@ def load_data(dataset_dir, split):
     return texts, labels
 
 
-def clean_text(text):
+def clean_text_simple(text):
     """
-    Lowercase, strip HTML tags, remove punctuation.
+    Simpler cleaning that preserves more natural language structure.
+    Good for language modeling where you want to keep sentence flow.
     """
+    if not text or not isinstance(text, str):
+        return ""
+
+    # Convert to lowercase
     text = text.lower()
-    text = re.sub(r'<br\s*/?>', ' ', text)
-    text = text.translate(str.maketrans('', '', string.punctuation))
+
+    # Remove URLs and web content
+    text = re.sub(r'http[s]?://\S+', ' ', text)
+    text = re.sub(r'www\.\S+', ' ', text)
+    text = re.sub(r'\S+\.com\S*', ' ', text)
+    text = re.sub(r'\S+\.org\S*', ' ', text)
+    text = re.sub(r'\S+\.net\S*', ' ', text)
+
+    # Keep basic punctuation for sentence structure
+    # Only remove excessive punctuation
+    text = re.sub(r'[^\w\s.,!?;:\-\']', ' ', text)
+
+    # Clean up whitespace
+    text = re.sub(r'\s+', ' ', text)
+    text = text.strip()
+
     return text
 
 
