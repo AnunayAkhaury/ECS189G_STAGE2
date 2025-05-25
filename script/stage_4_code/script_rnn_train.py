@@ -143,6 +143,7 @@ print(f"Trainable parameters: {trainable_params:,}")
 
 criterion = nn.BCEWithLogitsLoss()
 optimizer = optim.Adam(model.parameters(), lr=LR)
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=3)
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 5) Training loop
