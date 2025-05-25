@@ -33,7 +33,7 @@ FREEZE_EMBEDDINGS = False  # Set to True to freeze GloVe embeddings during train
 
 BATCH_SIZE = 128
 MAX_VOCAB = 20000
-MAX_LEN = 200
+MAX_LEN = 400
 # EMBED_DIM will be determined by GloVe file (e.g., 100 for glove.6B.100d.txt)
 RNN_UNITS = 256 #
 NUM_LAYERS = 3 #
@@ -41,7 +41,7 @@ BIDIR = True
 RNN_TYPE = 'rnn'  # 'lstm', 'gru', or 'rnn' #
 DROPOUT = 0.5 #
 LR = 1e-3
-EPOCHS = 100
+EPOCHS = 100 #
 
 # Output files
 MODEL_PATH = 'rnn_model_glove.pth'
