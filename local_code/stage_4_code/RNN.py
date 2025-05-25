@@ -163,7 +163,7 @@ def build_vocab(texts, max_vocab, glove_embeddings=None, mode="classification"):
     # Create mappings
     word2idx = {w: idx + 2 for idx, w in enumerate(selected_words)}
     word2idx['<PAD>'] = 0
-    word2idx['...'] = 1
+    word2idx['<UNK>'] = 1
     idx2word = {idx: word for word, idx in word2idx.items()}
 
     return word2idx, idx2word
@@ -360,7 +360,7 @@ def generate_text(model, word2idx, idx2word, seed_text,
         probs = torch.softmax(logits, dim=-1)
         nxt = torch.multinomial(probs, 1).item()
         gen.append(nxt)
-    return " ".join(idx2word.get(i, '<UNK>') for i in gen)
+    return " ".join(idx2word.get(i, '') for i in gen)
 
 
 # ────────────────────────────────────────────────────────────────────────────────
