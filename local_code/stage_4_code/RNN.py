@@ -30,40 +30,24 @@ def load_data(dataset_dir, split):
 
 
 def clean_text(text, mode="classification"):
-    """
-    Lowercase, strip HTML tags, remove punctuation.
-    """
     if mode == "classification":
         text = text.lower()
         text = re.sub(r'http[s]?://\S+', ' ', text)  # Remove URLs
         text = re.sub(r'www\.\S+', ' ', text)  # Remove www links
         text = text.translate(str.maketrans('', '', string.punctuation))
     elif mode == "generation":
-        # Keep only question marks - remove all other punctuation
+        # Keep only question marks and remove all other punctuation
         text = text.lower()
-
-        # Remove HTML and URLs
         text = re.sub(r'http[s]?://\S+', ' ', text)
         text = re.sub(r'www\.\S+', ' ', text)
-
-        # Remove quotes and brackets content (often metadata in jokes)
         text = re.sub(r'["""''`]', '', text)
         text = re.sub(r'\([^)]*\)', ' ', text)  # Remove (parenthetical content)
         text = re.sub(r'\[[^\]]*\]', ' ', text)  # Remove [bracketed content]
-
-        # Normalize multiple question marks to single
         text = re.sub(r'[?]{2,}', '?', text)
-
-        # REMOVE ALL PUNCTUATION EXCEPT QUESTION MARKS
         text = re.sub(r'[.!,:;]', ' ', text)  # Remove periods, exclamations, commas, etc.
-
-        # Add spaces around question marks to separate from words
         text = re.sub(r'([?])', r' \1 ', text)
-
-        # Remove all other special characters (but keep question marks)
         text = re.sub(r'[~@#$%^&*+=\[\]{}\\|<>_!.\-]', ' ', text)
-
-        # Clean up multiple spaces
+        #strip whitespace
         text = re.sub(r'\s+', ' ', text)
         text = text.strip()
     return text
@@ -251,15 +235,12 @@ class RNNClassifier(nn.Module):
         self.fc = nn.Linear(rnn_units * direction, 1)
 
     def forward(self, x):
-        # x: [B, T]
         emb = self.embed_dropout(self.embedding(x))  # [B, T, E]
         out, _ = self.rnn(emb)  # [B, T, H*dir]
 
         if isinstance(self.rnn, nn.RNN):
-            # Max pooling for vanilla RNN (gets the strongest activation across all time steps)
             h = out.max(dim=1)[0]  # [B, H*dir]
         else:
-            # For LSTM/GRU - use final state
             h = out[:, -1, :]  # [B, H*dir]
 
         h = self.fc_dropout(h)
