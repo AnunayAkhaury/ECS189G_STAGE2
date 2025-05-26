@@ -330,6 +330,8 @@ class RNNLanguageModel(nn.Module):
                  rnn_type="lstm", dropout=0.3,
                  pretrained_embeddings=None, freeze_embeddings=False):
         super().__init__()
+        #Added line
+        self.rnn_type = rnn_type
         self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
 
         # Load pre-trained embeddings if provided
