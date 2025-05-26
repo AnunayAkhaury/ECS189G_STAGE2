@@ -41,7 +41,7 @@ BIDIR = True
 RNN_TYPE = 'lstm'  # 'lstm', 'gru', or 'rnn'
 DROPOUT = 0.3 #
 LR = 1e-3
-EPOCHS = 100 #
+EPOCHS = 10 #
 
 # Output files
 MODEL_PATH = 'rnn_model_glove.pth'
