@@ -248,7 +248,7 @@ class RNNClassifier(nn.Module):
 
         direction = 2 if bidirectional else 1
         self.fc_dropout = nn.Dropout(dropout)
-        if self.rnn_type == "rnn":
+        if isinstance(self.rnn, nn.RNN):
             self.fc = nn.Linear(rnn_units * direction * 3, 1)
         else:
             self.fc = nn.Linear(rnn_units * direction, 1)
@@ -257,7 +257,7 @@ class RNNClassifier(nn.Module):
         # x: [B, T]
         emb = self.embed_dropout(self.embedding(x))  # [B, T, E]
         out, _ = self.rnn(emb)  # [B, T, H*dir]
-        if self.rnn_type == 'rnn':
+        if isinstance(self.rnn, nn.RNN):
             # Multiple pooling strategies for better representation
             batch_size = x.size(0)
             mask = (x != 0).float()  # [B, T]
