@@ -46,7 +46,6 @@ def clean_text(text, mode="classification"):
         text = re.sub(r'www\.\S+', ' ', text)  # Remove www links
         text = text.translate(str.maketrans('', '', string.punctuation))
         ####
-        nltk.download('popular')
         tokens = word_tokenize(text)
         stop_words = set(stopwords.words('english'))
         tokens = [w for w in tokens if not w in stop_words]
