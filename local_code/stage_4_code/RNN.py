@@ -248,10 +248,10 @@ class RNNClassifier(nn.Module):
 
         direction = 2 if bidirectional else 1
         self.fc_dropout = nn.Dropout(dropout)
-        if self.rnn != "rnn":
-            self.fc = nn.Linear(rnn_units * direction, 1)
-        else:
+        if self.rnn_type == "rnn":
             self.fc = nn.Linear(rnn_units * direction * 3, 1)
+        else:
+            self.fc = nn.Linear(rnn_units * direction, 1)
 
     def forward(self, x):
         # x: [B, T]
