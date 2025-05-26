@@ -248,30 +248,35 @@ class RNNClassifier(nn.Module):
 
         direction = 2 if bidirectional else 1
         self.fc_dropout = nn.Dropout(dropout)
-        self.fc = nn.Linear(rnn_units * direction * 3, 1)
+        if isinstance(self.rnn, nn.RNN):
+            self.fc = nn.Linear(rnn_units * direction * 3, 1)
+        else:
+            self.fc = nn.Linear(rnn_units * direction, 1)
 
     def forward(self, x):
         # x: [B, T]
         emb = self.embed_dropout(self.embedding(x))  # [B, T, E]
         out, _ = self.rnn(emb)  # [B, T, H*dir]
+        if isinstance(self.rnn, nn.RNN):
+            # Multiple pooling strategies for better representation
+            batch_size = x.size(0)
+            mask = (x != 0).float()  # [B, T]
+            lengths = mask.sum(dim=1).long() - 1  # Get actual sequence lengths
 
-        # Multiple pooling strategies for better representation
-        batch_size = x.size(0)
-        mask = (x != 0).float()  # [B, T]
-        lengths = mask.sum(dim=1).long() - 1  # Get actual sequence lengths
+            # Last token (properly masked)
+            h_last = out[torch.arange(batch_size), lengths]  # [B, H*dir]
 
-        # Last token (properly masked)
-        h_last = out[torch.arange(batch_size), lengths]  # [B, H*dir]
+            # Max pooling
+            h_max = out.max(dim=1)[0]  # [B, H*dir]
 
-        # Max pooling
-        h_max = out.max(dim=1)[0]  # [B, H*dir]
+            # Mean pooling (with masking)
+            mask_expanded = mask.unsqueeze(-1).expand_as(out)
+            h_mean = (out * mask_expanded).sum(dim=1) / mask.sum(dim=1, keepdim=True)
 
-        # Mean pooling (with masking)
-        mask_expanded = mask.unsqueeze(-1).expand_as(out)
-        h_mean = (out * mask_expanded).sum(dim=1) / mask.sum(dim=1, keepdim=True)
-
-        # Combine all representations
-        h = torch.cat([h_last, h_max, h_mean], dim=-1)  # [B, 3*H*dir]
+            # Combine all representations
+            h = torch.cat([h_last, h_max, h_mean], dim=-1)  # [B, 3*H*dir]
+        else:
+            h = out[:, -1, :]  # [B, H*dir]
 
         h = self.fc_dropout(h)
         logits = self.fc(h).squeeze(1)  # [B]
