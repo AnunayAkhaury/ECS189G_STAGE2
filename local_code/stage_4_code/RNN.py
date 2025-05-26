@@ -47,12 +47,9 @@ def clean_text(text, mode="classification"):
         text = text.translate(str.maketrans('', '', string.punctuation))
         ####
         tokens = word_tokenize(text)
-        stop_words = set(stopwords.words('english'))
-        tokens = [w for w in tokens if not w in stop_words]
         porter = PorterStemmer()
         stemmed = [porter.stem(word) for word in tokens]
         text = " ".join(stemmed)
-        print(text)
         ####
     elif mode == "generation":
         # Keep only question marks - remove all other punctuation
