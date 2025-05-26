@@ -48,6 +48,12 @@ All RNN implementations live under `local_code/stage_4_code/`:
   - `RNNGenerator` – sequence generation model  
   - `load_data`, `setup_glove_embeddings`, `TextDataset` – data‐loading & preprocessing utilities  
 
+Run through the setup colabs (PREFERRED):
+
+Classification: https://colab.research.google.com/drive/13iPD5WPOLOPV-Psz_btxsdaGGL-Ckfvn
+
+Generation: https://colab.research.google.com/drive/1D-DmPxNfA0kA-umM4ukFiKmk9W4iqULG
+
 ## Run classification/generation training
 ```bash
 python script/stage_4_code/script_rnn_train.py
@@ -56,10 +62,6 @@ python script/stage_4_code/script_rnn_generate.py
 
 ```
 
-Run through the setup colabs:
 
-Classification: https://colab.research.google.com/drive/13iPD5WPOLOPV-Psz_btxsdaGGL-Ckfvn
-
-Generation: https://colab.research.google.com/drive/1D-DmPxNfA0kA-umM4ukFiKmk9W4iqULG
 
 
