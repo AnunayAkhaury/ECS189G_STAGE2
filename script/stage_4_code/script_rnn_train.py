@@ -24,9 +24,7 @@ sys.path.insert(0, module_path)
 
 from RNN import load_data, setup_glove_embeddings, TextDataset, RNNClassifier
 
-# ────────────────────────────────────────────────────────────────────────────────
-# Configuration
-# ────────────────────────────────────────────────────────────────────────────────
+
 DATASET_DIR = '../../data/stage_4_data/text_classification'
 GLOVE_PATH = '../../data/stage_4_data/glove.6B.100d.txt'
 USE_GLOVE = True  # Set to False to use random embeddings instead
@@ -72,17 +70,13 @@ print(f"  Learning rate: {LR}")
 print(f"  Epochs: {EPOCHS}")
 print()
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 1) Load data
-# ────────────────────────────────────────────────────────────────────────────────
+
 print("Loading data...")
 train_texts, train_labels = load_data(DATASET_DIR, 'train')
 test_texts, test_labels = load_data(DATASET_DIR, 'test')
 print(f"Loaded {len(train_texts)} training samples and {len(test_texts)} test samples")
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 2) Build vocab and embeddings
-# ────────────────────────────────────────────────────────────────────────────────
+
 if USE_GLOVE and os.path.exists(GLOVE_PATH):
     print(f"\nSetting up vocabulary with GloVe embeddings...")
     word2idx, idx2word, embedding_matrix, embed_dim = setup_glove_embeddings(
@@ -107,9 +101,7 @@ vocab_size = len(word2idx)
 print(f"Vocabulary size: {vocab_size}")
 print(f"Embedding dimension: {embed_dim}")
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 3) Create datasets
-# ────────────────────────────────────────────────────────────────────────────────
+
 print("\nCreating datasets...")
 train_ds = TextDataset(train_texts, train_labels, word2idx, MAX_LEN)
 test_ds = TextDataset(test_texts, test_labels, word2idx, MAX_LEN)
@@ -120,9 +112,7 @@ test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE)
 print(f"Training batches: {len(train_loader)}")
 print(f"Test batches: {len(test_loader)}")
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 4) Create model
-# ────────────────────────────────────────────────────────────────────────────────
+
 print(f"\nCreating model...")
 model = RNNClassifier(
     vocab_size=vocab_size,
@@ -145,9 +135,7 @@ print(f"Trainable parameters: {trainable_params:,}")
 criterion = nn.BCEWithLogitsLoss()
 optimizer = optim.Adam(model.parameters(), lr=LR)
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 5) Training loop
-# ────────────────────────────────────────────────────────────────────────────────
+
 print(f"\nStarting training for {EPOCHS} epochs...")
 print("=" * 80)
 
@@ -219,9 +207,7 @@ for epoch in range(1, EPOCHS + 1):
 print("Training completed!")
 print("=" * 80)
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 6) Save model & history
-# ────────────────────────────────────────────────────────────────────────────────
+
 print(f"\nSaving model and results...")
 
 # Save model with all necessary information
@@ -261,9 +247,7 @@ with open(HIST_PATH, 'w') as f:
 print(f"Model saved to: {MODEL_PATH}")
 print(f"History saved to: {HIST_PATH}")
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 7) Plot and save learning curves
-# ────────────────────────────────────────────────────────────────────────────────
+
 print(f"Creating learning curves...")
 
 epochs_range = range(1, EPOCHS + 1)
@@ -333,9 +317,6 @@ print(f"  - History: {HIST_PATH}")
 print(f"  - Plots: {CURVE_PATH}")
 print("=" * 80)
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 9) Instructions for using the saved model
-# ────────────────────────────────────────────────────────────────────────────────
 print("\nTo load and use this model later:")
 print(f"""
 # Load the saved model
@@ -400,7 +381,6 @@ metrics['micro'] = {
     'f1':        f1_i
 }
 
-# --- print them all out ---
 print('************ Overall Performance ************')
 print(f"Accuracy: {metrics['accuracy']:.4f}")
 
