@@ -1,9 +1,4 @@
-"""""
-RNN.py
 
-Provides data loading, preprocessing, vocabulary building, dataset class, and RNN/LSTM/GRU model for text classification.
-Updated to support GloVe embeddings.
-"""
 import os
 import re
 import string
@@ -13,9 +8,6 @@ import torch
 from torch.utils.data import Dataset, TensorDataset
 import torch.nn as nn
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 1) Data loading and preprocessing
-# ────────────────────────────────────────────────────────────────────────────────
 def load_data(dataset_dir, split):
     texts, labels = [], []
     for label in ("pos", "neg"):
@@ -69,9 +61,6 @@ def clean_text(text, mode="classification"):
     return text
 
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 2) GloVe embeddings loading
-# ────────────────────────────────────────────────────────────────────────────────
 def load_glove_embeddings(glove_path):
     """
     Load GloVe embeddings from file.
@@ -113,9 +102,7 @@ def create_embedding_matrix(word2idx, glove_embeddings, embed_dim):
     return torch.tensor(embedding_matrix, dtype=torch.float32)
 
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 3) Vocabulary building and encoding
-# ────────────────────────────────────────────────────────────────────────────────
+
 def build_vocab(texts, max_vocab, glove_embeddings=None, mode="classification"):
     """
     Build a word2idx mapping of the most common max_vocab-2 words, with 0 for PAD and 1 for UNK.
@@ -185,9 +172,7 @@ def encode_texts(texts, word2idx, max_len, mode="classification"):
     return torch.tensor(sequences, dtype=torch.long)
 
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 4) PyTorch Dataset
-# ────────────────────────────────────────────────────────────────────────────────
+
 class TextDataset(Dataset):
     def __init__(self, texts, labels, word2idx, max_len, mode="classification"):
         self.X = encode_texts(texts, word2idx, max_len, mode=mode)
@@ -200,9 +185,7 @@ class TextDataset(Dataset):
         return self.X[idx], self.y[idx]
 
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 5) RNN/LSTM/GRU Model for Classification with GloVe Support
-# ────────────────────────────────────────────────────────────────────────────────
+
 class RNNClassifier(nn.Module):
     def __init__(
             self,
@@ -267,9 +250,7 @@ class RNNClassifier(nn.Module):
         return logits
 
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 6) Language Model Dataset and Model (UPDATED FOR GENERATION MODE)
-# ────────────────────────────────────────────────────────────────────────────────
+
 def build_lm_dataset(texts, word2idx, seq_len):
     """Build language modeling dataset for next-word prediction."""
     examples = []
@@ -348,9 +329,7 @@ class RNNLanguageModel(nn.Module):
         return self.fc(out), hidden  # [B,T,V], hidden
 
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 7) Text Generation Utility (UPDATED FOR GENERATION MODE)
-# ────────────────────────────────────────────────────────────────────────────────
+
 def generate_text(model, word2idx, idx2word, seed_text,
                   gen_len=100, seq_len=5, temperature=1.0, device=None):
     """Generate text using a trained language model."""
@@ -373,9 +352,7 @@ def generate_text(model, word2idx, idx2word, seed_text,
     return " ".join(idx2word.get(i, '') for i in gen)
 
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 8) Convenience function to set up GloVe embeddings (CLASSIFICATION DEFAULT)
-# ────────────────────────────────────────────────────────────────────────────────
+
 def setup_glove_embeddings(texts, glove_path, max_vocab, mode="classification"):
     """
     Convenience function to set up vocabulary and embeddings with GloVe.
