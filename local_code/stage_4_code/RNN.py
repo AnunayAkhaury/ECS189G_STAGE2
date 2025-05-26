@@ -12,12 +12,6 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, TensorDataset
 import torch.nn as nn
-####
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from nltk.stem.porter import PorterStemmer
-####
 
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -45,12 +39,6 @@ def clean_text(text, mode="classification"):
         text = re.sub(r'http[s]?://\S+', ' ', text)  # Remove URLs
         text = re.sub(r'www\.\S+', ' ', text)  # Remove www links
         text = text.translate(str.maketrans('', '', string.punctuation))
-        ####
-        tokens = word_tokenize(text)
-        porter = PorterStemmer()
-        stemmed = [porter.stem(word) for word in tokens]
-        text = " ".join(stemmed)
-        ####
     elif mode == "generation":
         # Keep only question marks - remove all other punctuation
         text = text.lower()
