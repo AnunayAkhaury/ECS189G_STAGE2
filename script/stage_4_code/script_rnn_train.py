@@ -6,10 +6,10 @@ import os, sys
 import json
 import matplotlib.pyplot as plt
 import torch
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim as optim
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 module_path = os.path.abspath(
     os.path.join(
@@ -39,7 +39,7 @@ MAX_LEN = 200
 RNN_UNITS = 256 #
 NUM_LAYERS = 2 #
 BIDIR = True
-RNN_TYPE = 'gru'  # 'lstm', 'gru', or 'rnn'
+RNN_TYPE = 'rnn'  # 'lstm', 'gru', or 'rnn'
 DROPOUT = 0.3 #
 LR = 1e-3
 EPOCHS = 10 #
@@ -153,60 +153,68 @@ print("=" * 80)
 
 history = {'train_loss': [], 'train_acc': [], 'test_loss': [], 'test_acc': []}
 
-# ────────────────────────────────────────────────────────────────────────────────
-# 5) Training loop
-# ────────────────────────────────────────────────────────────────────────────────
 for epoch in range(1, EPOCHS + 1):
-    # 1) TRAINING PASS
+    # Training phase
     model.train()
-    total_train_loss = 0
-    train_correct    = 0
-    for X, y in train_loader:
+    total_loss = 0
+    correct = 0
+    num_batches = 0
+
+    for batch_idx, (X, y) in enumerate(train_loader):
         X, y = X.to(DEVICE), y.to(DEVICE)
+
         optimizer.zero_grad()
         logits = model(X)
-        loss   = criterion(logits, y)
+        loss = criterion(logits, y)
         loss.backward()
         optimizer.step()
-        total_train_loss += loss.item() * X.size(0)
+
+        total_loss += loss.item() * X.size(0)
         preds = (torch.sigmoid(logits) >= 0.5).float()
-        train_correct += (preds == y).sum().item()
+        correct += (preds == y).sum().item()
+        num_batches += 1
 
-    train_loss = total_train_loss / len(train_ds)
-    train_acc  = train_correct    / len(train_ds)
+        # Print progress every 50 batches
+        if batch_idx % 50 == 0:
+            print(f"  Epoch {epoch}, Batch {batch_idx}/{len(train_loader)}, Loss: {loss.item():.4f}")
 
-    # 2) EVALUATION PASS
+    train_loss = total_loss / len(train_ds)
+    train_acc = correct / len(train_ds)
+
     model.eval()
-    total_test_loss = 0
-    test_correct    = 0
-    y_true, y_pred  = [], []
+    total_loss = 0
+    correct = 0
+    y_true = []
+    y_pred = []
+
     with torch.no_grad():
         for X, y in test_loader:
             X, y = X.to(DEVICE), y.to(DEVICE)
             logits = model(X)
-            loss   = criterion(logits, y)
-            total_test_loss += loss.item() * X.size(0)
+            loss = criterion(logits, y)
+            total_loss += loss.item() * X.size(0)
+
             preds = (torch.sigmoid(logits) >= 0.5).float()
-            test_correct += (preds == y).sum().item()
+            correct += (preds == y).sum().item()
+
+            # collect for final metrics
             y_true.extend(y.int().cpu().tolist())
             y_pred.extend(preds.int().cpu().tolist())
 
-    test_loss = total_test_loss / len(test_ds)
-    test_acc  = test_correct    / len(test_ds)
+    test_loss = total_loss / len(test_ds)
+    test_acc = correct / len(test_ds)
 
-    # 3) RECORD & LOG
+    # record history
     history['train_loss'].append(train_loss)
     history['train_acc'].append(train_acc)
     history['test_loss'].append(test_loss)
     history['test_acc'].append(test_acc)
 
+    # print epoch summary
     print(f"Epoch {epoch}/{EPOCHS} | "
           f"Train Loss: {train_loss:.4f} Acc: {train_acc:.4f} | "
-          f"Test Loss:  {test_loss:.4f} Acc: {test_acc:.4f}")
+          f"Test Loss: {test_loss:.4f} Acc: {test_acc:.4f}")
     print("-" * 80)
-
-
-
 
 print("Training completed!")
 print("=" * 80)
@@ -344,3 +352,71 @@ model.eval()
 # text = "This movie was great!"
 # ... (preprocessing and prediction code)
 """)
+
+
+y_true = []
+y_pred = []
+model.eval()
+with torch.no_grad():
+    for X, y in test_loader:
+        X, y    = X.to(DEVICE), y.to(DEVICE)
+        logits  = model(X)
+        preds   = (torch.sigmoid(logits) >= 0.5).float()
+        y_true.extend(y.int().cpu().tolist())
+        y_pred.extend(preds.int().cpu().tolist())
+
+metrics = {}
+
+# overall accuracy
+metrics['accuracy'] = accuracy_score(y_true, y_pred)
+
+# weighted precision, recall, f1
+p_w, r_w, f1_w, _ = precision_recall_fscore_support(
+    y_true, y_pred, average='weighted'
+)
+metrics['weighted'] = {
+    'precision': p_w,
+    'recall':    r_w,
+    'f1':        f1_w
+}
+
+# macro-averaged
+p_m, r_m, f1_m, _ = precision_recall_fscore_support(
+    y_true, y_pred, average='macro'
+)
+metrics['macro'] = {
+    'precision': p_m,
+    'recall':    r_m,
+    'f1':        f1_m
+}
+
+# micro-averaged
+p_i, r_i, f1_i, _ = precision_recall_fscore_support(
+    y_true, y_pred, average='micro'
+)
+metrics['micro'] = {
+    'precision': p_i,
+    'recall':    r_i,
+    'f1':        f1_i
+}
+
+# --- print them all out ---
+print('************ Overall Performance ************')
+print(f"Accuracy: {metrics['accuracy']:.4f}")
+
+print('\nWeighted Metrics:')
+print(f"Precision: {metrics['weighted']['precision']:.4f}")
+print(f"Recall:    {metrics['weighted']['recall']:.4f}")
+print(f"F1-score:  {metrics['weighted']['f1']:.4f}")
+
+print('\nMacro Metrics:')
+print(f"Precision: {metrics['macro']['precision']:.4f}")
+print(f"Recall:    {metrics['macro']['recall']:.4f}")
+print(f"F1-score:  {metrics['macro']['f1']:.4f}")
+
+print('\nMicro Metrics:')
+print(f"Precision: {metrics['micro']['precision']:.4f}")
+print(f"Recall:    {metrics['micro']['recall']:.4f}")
+print(f"F1-score:  {metrics['micro']['f1']:.4f}")
+
+print('************ Finish ************')
