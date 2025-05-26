@@ -12,10 +12,12 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, TensorDataset
 import torch.nn as nn
+####
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
+####
 
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -39,11 +41,12 @@ def clean_text(text, mode="classification"):
     Lowercase, strip HTML tags, remove punctuation.
     """
     if mode == "classification":
-        nltk.download('popular')
         text = text.lower()
         text = re.sub(r'http[s]?://\S+', ' ', text)  # Remove URLs
         text = re.sub(r'www\.\S+', ' ', text)  # Remove www links
         text = text.translate(str.maketrans('', '', string.punctuation))
+        ####
+        nltk.download('popular')
         tokens = word_tokenize(text)
         stop_words = set(stopwords.words('english'))
         tokens = [w for w in tokens if not w in stop_words]
@@ -51,6 +54,7 @@ def clean_text(text, mode="classification"):
         stemmed = [porter.stem(word) for word in tokens]
         text = " ".join(stemmed)
         print(text)
+        ####
     elif mode == "generation":
         # Keep only question marks - remove all other punctuation
         text = text.lower()
