@@ -77,18 +77,80 @@ class Dataset_Loader(object):
 
         # the following part, you can either put them into the setting class or you can leave them in the dataset loader
         # the following train, test, val index are just examples, sample the train, test according to project requirements
+        idx_val = None
         if self.dataset_name == 'cora':
             idx_train = range(140)
-            idx_test = range(200, 1200)
-            idx_val = range(1200, 1500)
-        elif self.dataset_name == 'citeseer':
-            idx_train = range(120)
-            idx_test = range(200, 1200)
-            idx_val = range(1200, 1500)
-        elif self.dataset_name == 'pubmed':
-            idx_train = range(60)
-            idx_test = range(6300, 7300)
-            idx_val = range(6000, 6300)
+            idx_val   = range(200, 500)
+            idx_test  = range(500, 1500)
+
+
+        elif self.dataset_name == "citeseer":
+
+            labels_np = labels.numpy()
+
+            num_classes = int(labels.max().item()) + 1
+
+            rng = np.random.RandomState(self.seed)
+
+            all_indices = np.arange(labels_np.shape[0])
+
+            # 1) pick 20 nodes per class → 120 total train
+
+            train_list = []
+
+            for cls in range(num_classes):
+                cls_nodes = np.where(labels_np == cls)[0]
+
+                rng.shuffle(cls_nodes)
+
+                train_list.append(cls_nodes[:20])
+
+            train_idx = np.hstack(train_list)
+
+            # 2) pool = everything except the 120 train nodes
+
+            pool = np.setdiff1d(all_indices, train_idx, assume_unique=True)
+
+            rng.shuffle(pool)
+
+            # 3) from pool: 500 for val, then 1200 for test
+
+            val_idx = pool[:500]
+
+            test_idx = pool[500:500 + 1200]
+
+            idx_train = train_idx
+
+            idx_val = val_idx
+
+            idx_test = test_idx
+
+        elif self.dataset_name == "pubmed":
+            labels_np = labels.numpy()
+            num_classes = int(labels.max().item()) + 1
+            rng = np.random.RandomState(self.seed)
+            all_indices = np.arange(labels_np.shape[0])
+
+                # 1) pick 20 nodes per class for train (60 total)
+            train_list = []
+            for cls in range(num_classes):
+                cls_nodes = np.where(labels_np == cls)[0]
+                rng.shuffle(cls_nodes)
+                train_list.append(cls_nodes[:20])
+            train_idx = np.hstack(train_list)
+
+                # 2) remove training nodes from pool
+            pool = np.setdiff1d(all_indices, train_idx, assume_unique=True)
+            rng.shuffle(pool)
+
+                # 3) from the pool, take next 500 for val, next 600 for test
+            val_idx = pool[:500]
+            test_idx = pool[500:1100]
+
+            idx_train = torch.LongTensor(train_idx.tolist())
+            idx_val = torch.LongTensor(val_idx.tolist())
+            idx_test = torch.LongTensor(test_idx.tolist())
+
         #---- cora-small is a toy dataset I hand crafted for debugging purposes ---
         elif self.dataset_name == 'cora-small':
             idx_train = range(5)
@@ -99,11 +161,12 @@ class Dataset_Loader(object):
         idx_val = torch.LongTensor(idx_val)
         idx_test = torch.LongTensor(idx_test)
         # get the training nodes/testing nodes
-        # train_x = features[idx_train]
-        # val_x = features[idx_val]
-        # test_x = features[idx_test]
-        # print(train_x, val_x, test_x)
+        train_x = features[idx_train]
+        val_x = features[idx_val]
+        test_x = features[idx_test]
+        print(train_x, val_x, test_x)
 
         train_test_val = {'idx_train': idx_train, 'idx_test': idx_test, 'idx_val': idx_val}
-        graph = {'node': idx_map, 'edge': edges, 'X': features, 'y': labels, 'utility': {'A': adj, 'reverse_idx': reverse_idx_map}}
+        graph = {'node': idx_map, 'edge': edges, 'X': features, 'y': labels,
+                 'utility': {'A': adj, 'reverse_idx': reverse_idx_map}}
         return {'graph': graph, 'train_test_val': train_test_val}

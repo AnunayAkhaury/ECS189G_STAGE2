@@ -61,6 +61,7 @@ import torch.nn as nn
 import torch.optim as optim
 from scipy import sparse
 import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -156,6 +157,9 @@ def train_and_evaluate(
         ],
         lr=learning_rate
     )
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, mode="max", factor=0.5, patience=20
+    # )
 
     # 4) Training loop
     train_loss_history = []
@@ -178,6 +182,7 @@ def train_and_evaluate(
             val_pred   = val_logits[idx_val].max(1)[1]
             correct_val = val_pred.eq(labels[idx_val]).sum().item()
             acc_val     = correct_val / idx_val.shape[0]
+            # scheduler.step(acc_val)
 
         train_loss_history.append(loss.item())
         val_acc_history.append(acc_val)
@@ -192,16 +197,89 @@ def train_and_evaluate(
                 f"Train Loss: {loss.item():.4f} | Val  Acc: {acc_val:.4f}"
             )
 
-    # 5) Load best‐performing weights and evaluate on test set
     model.load_state_dict(best_state)
     model.eval()
     with torch.no_grad():
+        # **ADD THIS**: run the model to get logits on all nodes
         test_logits = model(X_t, A_norm_t)
-        test_pred   = test_logits[idx_test].max(1)[1]
-        correct_test = test_pred.eq(labels[idx_test]).sum().item()
-        test_acc    = correct_test / idx_test.shape[0]
+
+        # now slice out the test‐set predictions
+        test_pred = test_logits[idx_test].max(1)[1]
+        true_test = labels[idx_test]  # ground‐truth labels for the test split
+
+        # 1) Accuracy
+        test_acc = accuracy_score(
+            true_test.cpu().numpy(),
+            test_pred.cpu().numpy()
+        )
+
+        # 2) Weighted precision/recall/F1
+        precision_w, recall_w, f1_w, _ = precision_recall_fscore_support(
+            true_test.cpu().numpy(),
+            test_pred.cpu().numpy(),
+            average="weighted",
+            zero_division=0
+        )
+
+        # 3) Macro precision/recall/F1
+        precision_m, recall_m, f1_m, _ = precision_recall_fscore_support(
+            true_test.cpu().numpy(),
+            test_pred.cpu().numpy(),
+            average="macro",
+            zero_division=0
+        )
+
+        # 4) Micro precision/recall/F1
+        precision_i, recall_i, f1_i, _ = precision_recall_fscore_support(
+            true_test.cpu().numpy(),
+            test_pred.cpu().numpy(),
+            average="micro",
+            zero_division=0
+        )
+
 
     print(f"\n→ [{dataset_name.upper()}] Final Test Accuracy: {test_acc:.4f}\n")
+
+    # Build a simple metrics dict
+    metrics = {
+        "accuracy": test_acc,
+        "weighted": {
+            "precision": precision_w,
+            "recall": recall_w,
+            "f1": f1_w
+        },
+        "macro": {
+            "precision": precision_m,
+            "recall": recall_m,
+            "f1": f1_m
+        },
+        "micro": {
+            "precision": precision_i,
+            "recall": recall_i,
+            "f1": f1_i
+        }
+    }
+
+    # Print out all the requested stats
+    print("************ Overall Performance ************")
+    print(f"Accuracy: {metrics['accuracy']:.4f}\n")
+
+    print("Weighted Metrics:")
+    print(f"Precision: {metrics['weighted']['precision']:.4f}")
+    print(f"Recall:    {metrics['weighted']['recall']:.4f}")
+    print(f"F1-score:  {metrics['weighted']['f1']:.4f}\n")
+
+    print("Macro Metrics:")
+    print(f"Precision: {metrics['macro']['precision']:.4f}")
+    print(f"Recall:    {metrics['macro']['recall']:.4f}")
+    print(f"F1-score:  {metrics['macro']['f1']:.4f}\n")
+
+    print("Micro Metrics:")
+    print(f"Precision: {metrics['micro']['precision']:.4f}")
+    print(f"Recall:    {metrics['micro']['recall']:.4f}")
+    print(f"F1-score:  {metrics['micro']['f1']:.4f}\n")
+
+    print("************ Finish ************")
 
     # 6) Plot + save learning curves
     epochs = np.arange(1, num_epochs + 1)
@@ -247,11 +325,15 @@ if __name__ == "__main__":
         required=True,
         help="Which dataset to train on: 'cora', 'citeseer', or 'pubmed'."
     )
+    default_data_dir = os.path.join(PROJECT_ROOT, "data", "stage_5_data")
     parser.add_argument(
         "--data_dir",
         type=str,
-        default="data",
-        help="Path to the directory containing 'cora/', 'citeseer/', 'pubmed/'."
+        default=default_data_dir,  # ← Make sure this is exactly as shown
+        help=(
+            "Path to directory containing 'cora', 'citeseer', 'pubmed' subfolders. "
+            f"Default is '{default_data_dir}'."
+        )
     )
     parser.add_argument(
         "--hidden_dim", type=int, default=16,

@@ -36,7 +36,7 @@ class GCNLayer(nn.Module):
             nn.init.zeros_(self.bias)
 
     def forward(self, X: torch.FloatTensor, A_norm: torch.sparse.FloatTensor) -> torch.FloatTensor:
-        """
+        """a
         Forward pass of a single GCN layer.
 
         Args:
