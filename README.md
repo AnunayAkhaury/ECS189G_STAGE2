@@ -36,48 +36,32 @@ Call .run() to train and evaluate
 
 Save loss/accuracy plots and any model checkpoints under result/
 
+```
 
-\section*{Stage 4: RNN Models}
+# Stage 4: RNN Models
 
-\subsection*{Model code location}
-All RNN implementations live under \texttt{local\_code/stage\_4\_code/}:
-\begin{itemize}
-  \item \texttt{RNN.py} 
-    \begin{itemize}
-      \item \texttt{RNNClassifier} – sequence classification model  
-      \item \texttt{RNNGenerator} – sequence generation model  
-      \item \texttt{load\_data}, \texttt{setup\_glove\_embeddings}, \texttt{TextDataset} – data utilities
-    \end{itemize}
-\end{itemize}
+## Model code location
+All RNN implementations live under `local_code/stage_4_code/`:
 
-\subsection*{Run classification training}
-\begin{verbatim}
+- **RNN.py**  
+  - `RNNClassifier` – sequence classification model  
+  - `RNNGenerator` – sequence generation model  
+  - `load_data`, `setup_glove_embeddings`, `TextDataset` – data‐loading & preprocessing utilities  
+
+Run through the setup colabs (PREFERRED):
+
+Classification: https://colab.research.google.com/drive/13iPD5WPOLOPV-Psz_btxsdaGGL-Ckfvn
+
+Generation: https://colab.research.google.com/drive/1D-DmPxNfA0kA-umM4ukFiKmk9W4iqULG
+
+## Run classification/generation training
+```bash
 python script/stage_4_code/script_rnn_train.py
-\end{verbatim}
-This script will:
-\begin{enumerate}
-  \item Load train/test splits from \texttt{data/stage\_4\_data/text\_classification/}  
-  \item Build vocabulary and (optionally) GloVe embeddings  
-  \item Train \texttt{RNNClassifier}, evaluate accuracy/loss each epoch  
-  \item Save checkpoint (\texttt{rnn\_model\_glove.pth}), history (\texttt{history\_glove.json}), and learning curves (\texttt{learning\_curves\_glove.png})
-\end{enumerate}
 
-\subsection*{Run generation}
-\begin{verbatim}
 python script/stage_4_code/script_rnn_generate.py
-\end{verbatim}
-This script will:
-\begin{enumerate}
-  \item Load the trained checkpoint (\texttt{rnn\_model\_glove.pth})  
-  \item Given a text prompt, generate new sequences via \texttt{RNNGenerator}  
-  \item Save outputs under \texttt{results/}
-\end{enumerate}
 
-\subsection*{To do}
-\begin{itemize}
-  \item Perform hyperparameter sweeps (e.g.\ learning rate, dropout, RNN type, bidirectionality)  
-  \item Integrate an attention mechanism for longer context retention  
-  \item Enhance generation with temperature sampling and beam search  
-  \item Add unit tests for preprocessing, model save/load, and inference  
-  \item Automate experiment logging \& result comparison
-\end{itemize}
+```
+
+
+
+
