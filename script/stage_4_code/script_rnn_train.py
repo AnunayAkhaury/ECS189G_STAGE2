@@ -42,7 +42,7 @@ BIDIR = True
 RNN_TYPE = 'rnn'  # 'lstm', 'gru', or 'rnn'
 DROPOUT = 0.3 #
 LR = 1e-3
-EPOCHS = 10 #
+EPOCHS = 300 #
 
 # Output files
 MODEL_PATH = 'rnn_model_glove.pth'
@@ -300,10 +300,13 @@ plt.legend()
 plt.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig(CURVE_PATH, dpi=300, bbox_inches='tight')
-plt.show()
 
+# IMPORTANT: Save BEFORE showing!
+plt.savefig(CURVE_PATH, dpi=300, bbox_inches='tight')
 print(f"Learning curves saved to: {CURVE_PATH}")
+
+# Show the plot (this clears the figure after displaying)
+plt.show()
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 8) Final summary
