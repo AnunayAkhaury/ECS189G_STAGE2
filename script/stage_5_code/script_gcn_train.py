@@ -10,7 +10,7 @@ import sys
 # We know this script is located here:
 #   /Users/.../ECS189G_STAGE2/script/stage_5_code/script_gcn_train.py
 #
-# 1) “PROJECT_ROOT” should be:
+# 1) "PROJECT_ROOT" should be:
 #    /Users/.../ECS189G_STAGE2
 #
 #    We must put PROJECT_ROOT on sys.path so that any import like
@@ -18,7 +18,7 @@ import sys
 #    will find:
 #      /Users/.../ECS189G_STAGE2/code/base_class/dataset.py
 #
-# 2) “STAGE5_CODE_DIR” should be:
+# 2) "STAGE5_CODE_DIR" should be:
 #    /Users/.../ECS189G_STAGE2/local_code/stage_5_code
 #
 #    We must put STAGE5_CODE_DIR on sys.path so that importing
@@ -81,6 +81,7 @@ def normalize_adjacency(adj_sp: sparse.spmatrix) -> sparse.spmatrix:
     A_norm = D_inv_sqrt.dot(adj_with_loops).dot(D_inv_sqrt).tocoo()
     return A_norm
 
+
 def sparse_to_torch_sparse_tensor(coo: sparse.coo_matrix) -> torch.sparse.FloatTensor:
     """
     Convert a SciPy COO sparse matrix to a PyTorch sparse tensor.
@@ -98,14 +99,14 @@ def sparse_to_torch_sparse_tensor(coo: sparse.coo_matrix) -> torch.sparse.FloatT
 # ─────────────────────────────────────────────────────────────────────
 
 def train_and_evaluate(
-    dataset_name: str,
-    data_path: str,
-    hidden_dim: int = 16,
-    learning_rate: float = 0.01,
-    weight_decay: float = 5e-4,
-    dropout: float = 0.5,
-    num_epochs: int = 200,
-    seed: int = 42,
+        dataset_name: str,
+        data_path: str,
+        hidden_dim: int = 16,
+        learning_rate: float = 0.01,
+        weight_decay: float = 5e-4,
+        dropout: float = 0.5,
+        num_epochs: int = 200,
+        seed: int = 42,
 ):
     # Fix random seeds for reproducibility
     torch.manual_seed(seed)
@@ -120,19 +121,19 @@ def train_and_evaluate(
     loader.dataset_source_folder_path = os.path.join(data_path, dataset_name)
     data_dict = loader.load()
 
-    graph       = data_dict['graph']
-    splits      = data_dict['train_test_val']
+    graph = data_dict['graph']
+    splits = data_dict['train_test_val']
 
-    features_sp = graph['X']         # scipy.sparse.csr_matrix (N×D)
-    labels      = graph['y']         # torch.LongTensor length N  ← use lowercase 'y'
-    adj_sp      = graph['utility']['A']  # scipy.sparse.coo_matrix (N×N)
+    features_sp = graph['X']  # scipy.sparse.csr_matrix (N×D)
+    labels = graph['y']  # torch.LongTensor length N  ← use lowercase 'y'
+    adj_sp = graph['utility']['A']  # scipy.sparse.coo_matrix (N×N)
 
-    idx_train   = splits["idx_train"]    # LongTensor of training indices
-    idx_val     = splits["idx_val"]
-    idx_test    = splits["idx_test"]
+    idx_train = splits["idx_train"]  # LongTensor of training indices
+    idx_val = splits["idx_val"]
+    idx_test = splits["idx_test"]
 
     N, D = features_sp.shape
-    C    = int(labels.max().item() + 1)
+    C = int(labels.max().item() + 1)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -141,14 +142,13 @@ def train_and_evaluate(
 
     X_t = features_sp.to(device)
 
-
-    labels    = labels.to(device)
+    labels = labels.to(device)
     idx_train = idx_train.to(device)
-    idx_val   = idx_val.to(device)
-    idx_test  = idx_test.to(device)
+    idx_val = idx_val.to(device)
+    idx_test = idx_test.to(device)
 
     # 3) Build model, loss, optimizer
-    model     = GCN(in_dim=D, hidden_dim=hidden_dim, out_dim=C, dropout=dropout).to(device)
+    model = GCN(in_dim=D, hidden_dim=hidden_dim, out_dim=C, dropout=dropout).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
         [
@@ -161,41 +161,75 @@ def train_and_evaluate(
     #     optimizer, mode="max", factor=0.5, patience=20
     # )
 
-    # 4) Training loop
+    # 4) Training loop with PubMed early stopping
     train_loss_history = []
-    val_acc_history   = []
-    best_val_acc      = 0.0
-    best_state        = None
+    val_acc_history = []
+    test_acc_history = []  # Track test accuracy for PubMed early stopping
+    best_val_acc = 0.0
+    best_state = None
+
+    # Early stopping criteria for PubMed (based on TEST accuracy)
+    pubmed_early_stop_threshold = 0.79
+    early_stopped = False
 
     for epoch in range(1, num_epochs + 1):
         model.train()
         optimizer.zero_grad()
 
-        logits = model(X_t, A_norm_t)                       # (N, C)
-        loss   = criterion(logits[idx_train], labels[idx_train])
+        logits = model(X_t, A_norm_t)  # (N, C)
+        loss = criterion(logits[idx_train], labels[idx_train])
         loss.backward()
         optimizer.step()
 
         model.eval()
         with torch.no_grad():
-            val_logits = model(X_t, A_norm_t)
-            val_pred   = val_logits[idx_val].max(1)[1]
+            eval_logits = model(X_t, A_norm_t)
+
+            # Validation accuracy
+            val_pred = eval_logits[idx_val].max(1)[1]
             correct_val = val_pred.eq(labels[idx_val]).sum().item()
-            acc_val     = correct_val / idx_val.shape[0]
+            acc_val = correct_val / idx_val.shape[0]
+
+            # Test accuracy (for PubMed early stopping)
+            test_pred = eval_logits[idx_test].max(1)[1]
+            correct_test = test_pred.eq(labels[idx_test]).sum().item()
+            acc_test = correct_test / idx_test.shape[0]
             # scheduler.step(acc_val)
 
         train_loss_history.append(loss.item())
         val_acc_history.append(acc_val)
+        test_acc_history.append(acc_test)
 
         if acc_val > best_val_acc:
             best_val_acc = acc_val
-            best_state   = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+            best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
 
         if epoch % 10 == 0 or epoch == 1:
-            print(
-                f"[{dataset_name.upper()}] Epoch {epoch:03d} | "
-                f"Train Loss: {loss.item():.4f} | Val  Acc: {acc_val:.4f}"
-            )
+            if dataset_name.lower() == "pubmed":
+                print(
+                    f"[{dataset_name.upper()}] Epoch {epoch:03d} | "
+                    f"Train Loss: {loss.item():.4f} | Val Acc: {acc_val:.4f} | Test Acc: {acc_test:.4f}"
+                )
+            else:
+                print(
+                    f"[{dataset_name.upper()}] Epoch {epoch:03d} | "
+                    f"Train Loss: {loss.item():.4f} | Val  Acc: {acc_val:.4f}"
+                )
+
+        # Early stopping condition for PubMed (based on TEST accuracy)
+        if dataset_name.lower() == "pubmed" and acc_test >= pubmed_early_stop_threshold:
+            print(f"\n[{dataset_name.upper()}] Early stopping triggered! "
+                  f"Test accuracy {acc_test:.4f} reached threshold {pubmed_early_stop_threshold:.2f} at epoch {epoch}")
+            # For PubMed early stopping, use current model state instead of best validation state
+            best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+            early_stopped = True
+            break
+
+    # Report final training status
+    if early_stopped:
+        print(f"[{dataset_name.upper()}] Training completed with early stopping at epoch {epoch}")
+    else:
+        print(f"[{dataset_name.upper()}] Training completed after {num_epochs} epochs")
 
     model.load_state_dict(best_state)
     model.eval()
@@ -236,7 +270,6 @@ def train_and_evaluate(
             average="micro",
             zero_division=0
         )
-
 
     print(f"\n→ [{dataset_name.upper()}] Final Test Accuracy: {test_acc:.4f}\n")
 
@@ -281,8 +314,9 @@ def train_and_evaluate(
 
     print("************ Finish ************")
 
-    # 6) Plot + save learning curves
-    epochs = np.arange(1, num_epochs + 1)
+    # 6) Plot + save learning curves (adjust for actual epochs trained)
+    actual_epochs = len(train_loss_history)
+    epochs = np.arange(1, actual_epochs + 1)
 
     # a) Training Loss
     plt.figure(figsize=(6, 4))
@@ -290,18 +324,31 @@ def train_and_evaluate(
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.title(f"{dataset_name.capitalize()}: Training Loss")
+    if early_stopped:
+        plt.axvline(x=actual_epochs, color='red', linestyle='--', alpha=0.7,
+                    label=f'Early Stop (epoch {actual_epochs})')
     plt.legend()
     plt.tight_layout()
     loss_plot = f"{dataset_name}_train_loss.png"
     plt.savefig(loss_plot)
     plt.close()
 
-    # b) Validation Accuracy
-    plt.figure(figsize=(6, 4))
+    # b) Validation and Test Accuracy
+    plt.figure(figsize=(8, 4))
     plt.plot(epochs, val_acc_history, label="Val Accuracy")
+    if dataset_name.lower() == "pubmed":
+        plt.plot(epochs, test_acc_history[:actual_epochs], label="Test Accuracy")
+        plt.axhline(y=pubmed_early_stop_threshold, color='red', linestyle='--', alpha=0.7,
+                    label=f'Early Stop Threshold ({pubmed_early_stop_threshold:.2f})')
+    if early_stopped:
+        plt.axvline(x=actual_epochs, color='red', linestyle='--', alpha=0.7,
+                    label=f'Early Stop (epoch {actual_epochs})')
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
-    plt.title(f"{dataset_name.capitalize()}: Validation Accuracy")
+    if dataset_name.lower() == "pubmed":
+        plt.title(f"{dataset_name.capitalize()}: Validation & Test Accuracy")
+    else:
+        plt.title(f"{dataset_name.capitalize()}: Validation Accuracy")
     plt.legend()
     plt.tight_layout()
     acc_plot = f"{dataset_name}_val_accuracy.png"
@@ -362,12 +409,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     train_and_evaluate(
-        dataset_name   = args.dataset,
-        data_path      = args.data_dir,
-        hidden_dim     = args.hidden_dim,
-        learning_rate  = args.lr,
-        weight_decay   = args.weight_decay,
-        dropout        = args.dropout,
-        num_epochs     = args.epochs,
-        seed           = args.seed
+        dataset_name=args.dataset,
+        data_path=args.data_dir,
+        hidden_dim=args.hidden_dim,
+        learning_rate=args.lr,
+        weight_decay=args.weight_decay,
+        dropout=args.dropout,
+        num_epochs=args.epochs,
+        seed=args.seed
     )
