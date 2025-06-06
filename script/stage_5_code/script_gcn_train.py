@@ -169,7 +169,7 @@ def train_and_evaluate(
     best_state = None
 
     # Early stopping criteria for PubMed (based on TEST accuracy)
-    pubmed_early_stop_threshold = 0.79
+    pubmed_early_stop_threshold = 1
     early_stopped = False
 
     for epoch in range(1, num_epochs + 1):

@@ -5,6 +5,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import scipy.sparse as sp
 import numpy as np
+import math
+from torch.nn.parameter import Parameter
+from torch.nn.modules.module import Module
 
 
 def normalize_adjacency(adj_matrix):
@@ -52,60 +55,39 @@ def normalize_adjacency(adj_matrix):
     return torch.sparse_coo_tensor(indices, values, shape).coalesce()
 
 
-class GCNLayer(nn.Module):
+class GraphConvolution(Module):
     """
-    A single Graph Convolutional Network (GCN) layer.
-    Applies a linear transformation followed by propagation through a normalized adjacency.
-
-    Z = A_norm · (X W) + b
-
-    Args:
-        in_features (int):  Number of input feature dimensions per node.
-        out_features (int): Number of output feature dimensions per node.
-        bias (bool):        Whether to include a learnable bias term. Default: True.
+    Simple GCN layer, similar to https://arxiv.org/abs/1609.02907
     """
-
-    def __init__(self, in_features: int, out_features: int, bias: bool = True):
-        super(GCNLayer, self).__init__()
-        # Weight matrix W ∈ ℝ^{in_features × out_features}
-        self.weight = nn.Parameter(torch.Tensor(in_features, out_features))
+    def __init__(self, in_features, out_features, bias=True):
+        super(GraphConvolution, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.weight = Parameter(torch.FloatTensor(in_features, out_features))
         if bias:
-            self.bias = nn.Parameter(torch.Tensor(out_features))
+            self.bias = Parameter(torch.FloatTensor(out_features))
         else:
             self.register_parameter('bias', None)
         self.reset_parameters()
 
     def reset_parameters(self):
-        """
-        Initialize weights with Xavier/Glorot uniform and bias to zeros.
-        """
-        nn.init.xavier_uniform_(self.weight)
+        stdv = 1. / math.sqrt(self.weight.size(1))
+        self.weight.data.uniform_(-stdv, stdv)
         if self.bias is not None:
-            nn.init.zeros_(self.bias)
+            self.bias.data.uniform_(-stdv, stdv)
 
-    def forward(self, X: torch.FloatTensor, A_norm: torch.sparse.FloatTensor) -> torch.FloatTensor:
-        """
-        Forward pass of a single GCN layer.
-
-        Args:
-            X (torch.FloatTensor):      Node feature matrix, shape (N, in_features).
-            A_norm (torch.sparse.FloatTensor): Precomputed normalized adjacency (Â), shape (N, N).
-
-        Returns:
-            out (torch.FloatTensor):    Transformed node features, shape (N, out_features).
-        """
-        # Linear transformation: support = X · W  → shape: (N, out_features)
-        support = torch.mm(X, self.weight)
-
-        # Propagate through normalized adjacency: out = Â · support
-        # Using sparse-dense multiplication: (N×N) × (N×out_features) → (N×out_features)
-        out = torch.spmm(A_norm, support)
-
-        # Add bias if it exists
+    def forward(self, input, adj):
+        support = torch.mm(input, self.weight)
+        output = torch.spmm(adj, support)
         if self.bias is not None:
-            out = out + self.bias
+            return output + self.bias
+        else:
+            return output
 
-        return out
+    def __repr__(self):
+        return self.__class__.__name__ + ' (' \
+               + str(self.in_features) + ' -> ' \
+               + str(self.out_features) + ')'
 
 
 class GCN(nn.Module):
@@ -113,7 +95,7 @@ class GCN(nn.Module):
     Two-layer Graph Convolutional Network for node classification.
 
     Architecture:
-      Input → GCNLayer(in_dim → hidden_dim) → ReLU → Dropout → GCNLayer(hidden_dim → out_dim)
+      Input → GraphConvolution(in_dim → hidden_dim) → ReLU → Dropout → GraphConvolution(hidden_dim → out_dim)
 
     Args:
         in_dim (int):      Number of input features per node (D).
@@ -124,8 +106,8 @@ class GCN(nn.Module):
 
     def __init__(self, in_dim: int, hidden_dim: int, out_dim: int, dropout: float = 0.5):
         super(GCN, self).__init__()
-        self.conv1 = GCNLayer(in_dim, hidden_dim, bias=True)
-        self.conv2 = GCNLayer(hidden_dim, out_dim, bias=True)
+        self.conv1 = GraphConvolution(in_dim, hidden_dim, bias=True)
+        self.conv2 = GraphConvolution(hidden_dim, out_dim, bias=True)
         self.dropout = dropout
 
     def forward(self, X: torch.FloatTensor, A_norm: torch.sparse.FloatTensor) -> torch.FloatTensor:
