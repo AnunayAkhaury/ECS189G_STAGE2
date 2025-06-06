@@ -61,7 +61,44 @@ python script/stage_4_code/script_rnn_train.py
 python script/stage_4_code/script_rnn_generate.py
 
 ```
+# Stage 5: GCN Models
 
+A quick reference to where the model classes live and how to launch their training scripts.
+
+---
+
+## Model code location
+
+All GCN implementations are under `local_code/stage_5_code/`:
+
+- **`GCN.py`** – two-layer Graph Convolutional Network model  
+- **`Dataset_Loader_Node_Classification.py`** – citation-graph data loader  
+
+---
+
+## Run training
+
+Script lives under `script/stage_5_code/` and can be launched directly:
+
+```bash
+python script/stage_5_code/script_gcn_train.py --dataset cora
+python script/stage_5_code/script_gcn_train.py --dataset citeseer
+python script/stage_5_code/script_gcn_train.py --dataset pubmed
+```
+
+Additonal Arguments for training: [-h] --dataset {cora,citeseer,pubmed} [--data_dir DATA_DIR] [--hidden_dim HIDDEN_DIM] [--lr LR] [--weight_decay WEIGHT_DECAY] [--dropout DROPOUT]
+                           [--epochs EPOCHS] [--seed SEED]
+Each run will:
+
+Load data from data/stage_5_data/<dataset>/
+
+Add self-loops and normalize the adjacency matrix
+
+Instantiate the GCN model and move data to device
+
+Train with Adam (weight decay + dropout), printing train/val (and test for PubMed) metrics per epoch
+
+Save loss & accuracy plots and checkpoints under results/
 
 
 
