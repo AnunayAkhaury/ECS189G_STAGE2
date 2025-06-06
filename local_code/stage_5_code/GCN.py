@@ -3,6 +3,53 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import scipy.sparse as sp
+import numpy as np
+
+
+def normalize_adjacency(adj_matrix):
+    """
+    Compute the renormalization trick: D̃^(-1/2) Ã D̃^(-1/2)
+
+    This implements the renormalization from Kipf & Welling (2017):
+    - Ã = A + I_N (add self-connections)
+    - D̃_ii = Σ_j Ã_ij (degree matrix of augmented adjacency)
+    - Return: D̃^(-1/2) Ã D̃^(-1/2)
+
+    Args:
+        adj_matrix: Adjacency matrix as scipy sparse matrix or numpy array
+
+    Returns:
+        torch.sparse.FloatTensor: Normalized adjacency matrix D̃^(-1/2) Ã D̃^(-1/2)
+    """
+    # Convert to scipy sparse if needed
+    if isinstance(adj_matrix, np.ndarray):
+        adj_matrix = sp.csr_matrix(adj_matrix)
+    elif torch.is_tensor(adj_matrix):
+        adj_matrix = sp.csr_matrix(adj_matrix.cpu().numpy())
+
+    # Add self-connections: Ã = A + I
+    num_nodes = adj_matrix.shape[0]
+    adj_tilde = adj_matrix + sp.eye(num_nodes)
+
+    # Compute degree matrix D̃
+    degree_vec = np.array(adj_tilde.sum(axis=1)).flatten()
+
+    # Compute D̃^(-1/2)
+    degree_inv_sqrt = np.power(degree_vec, -0.5)
+    degree_inv_sqrt[np.isinf(degree_inv_sqrt)] = 0.0
+    degree_inv_sqrt_mat = sp.diags(degree_inv_sqrt)
+
+    # Compute normalized adjacency: D̃^(-1/2) Ã D̃^(-1/2)
+    normalized_adj = degree_inv_sqrt_mat @ adj_tilde @ degree_inv_sqrt_mat
+
+    # Convert to PyTorch sparse tensor
+    normalized_adj_coo = normalized_adj.tocoo()
+    indices = torch.from_numpy(np.vstack((normalized_adj_coo.row, normalized_adj_coo.col))).long()
+    values = torch.from_numpy(normalized_adj_coo.data).float()
+    shape = normalized_adj_coo.shape
+
+    return torch.sparse_coo_tensor(indices, values, shape).coalesce()
 
 
 class GCNLayer(nn.Module):
@@ -17,6 +64,7 @@ class GCNLayer(nn.Module):
         out_features (int): Number of output feature dimensions per node.
         bias (bool):        Whether to include a learnable bias term. Default: True.
     """
+
     def __init__(self, in_features: int, out_features: int, bias: bool = True):
         super(GCNLayer, self).__init__()
         # Weight matrix W ∈ ℝ^{in_features × out_features}
@@ -36,7 +84,7 @@ class GCNLayer(nn.Module):
             nn.init.zeros_(self.bias)
 
     def forward(self, X: torch.FloatTensor, A_norm: torch.sparse.FloatTensor) -> torch.FloatTensor:
-        """a
+        """
         Forward pass of a single GCN layer.
 
         Args:
@@ -73,6 +121,7 @@ class GCN(nn.Module):
         out_dim (int):     Number of output classes (C).
         dropout (float):   Dropout probability applied after the first GCN layer. Default: 0.5.
     """
+
     def __init__(self, in_dim: int, hidden_dim: int, out_dim: int, dropout: float = 0.5):
         super(GCN, self).__init__()
         self.conv1 = GCNLayer(in_dim, hidden_dim, bias=True)
@@ -91,12 +140,12 @@ class GCN(nn.Module):
             logits (torch.FloatTensor):   Raw class scores for each node, shape (N, out_dim).
         """
         # First GCN layer + ReLU
-        h = self.conv1(X, A_norm)      # → shape: (N, hidden_dim)
+        h = self.conv1(X, A_norm)  # → shape: (N, hidden_dim)
         h = F.relu(h)
 
         # Dropout (only applied during training)
         h = F.dropout(h, p=self.dropout, training=self.training)
 
         # Second GCN layer (produces logits)
-        logits = self.conv2(h, A_norm) # → shape: (N, out_dim)
+        logits = self.conv2(h, A_norm)  # → shape: (N, out_dim)
         return logits
